@@ -1,0 +1,77 @@
+---
+title: "Nutrition_textmining"
+author: "Mariateresa Russo"
+date: "2025-05-19"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(stringr)
+library(tm)
+
+nutrition_comments = read.csv("nutrition_comments.csv")
+nutrition_threads = read.csv("nutrition_threads.csv")
+
+nutrition_threads
+nutrition_comments 
+
+sum(nutrition_threads$comments)
+nutrition_comments %>%
+  filter(!grepl("_", comment_id)) %>%
+  summarise(total_main_comments = n())
+
+nutrition_comments <- nutrition_comments %>%
+  mutate(thread = as.integer(str_extract(comment_id, "^[0-9]+")))
+
+table(nutrition_threads$comments)
+table(as.numeric(nutrition_comments$thread))
+
+
+```
+
+```{r}
+remove_function <-content_transformer(function(x, pattern) gsub(pattern,' ',x))
+
+remove_urls <- function(text) {
+  text <- gsub("(f|ht)tp(s?)://[^ ]+", "", text) #remove url and links
+  text <- gsub("bit\\.ly/\\w+", "", text)
+  return(text)
+}
+
+remove_short_words <- function(text) { #rimuove parole con meno di 2 lettere
+  words <- unlist(strsplit(text, "\\s+"))
+  long_words <- words[nchar(words) > 2]
+  cleaned_text <- paste(long_words, collapse = " ")
+  return(cleaned_text)
+}
+
+```
+
+
+```{r}
+toUTF8 <- content_transformer(function(x) iconv(x, from = "", to = "UTF-8", sub = ""))
+corpus <- VCorpus(VectorSource(nutrition_threads$text))
+corpus <- tm_map(corpus, toUTF8)
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, content_transformer(remove_urls))
+corpus <- tm_map(corpus, remove_function, "/")
+corpus <- tm_map(corpus, remove_function, "'")
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, content_transformer(remove_short_words))
+corpus <- tm_map(corpus, stripWhitespace)
+```
+
+
+```{r}
+corpus_content <- sapply(corpus, as.character)
+
+df_new <- data.frame(Corpus = corpus_content)
+```
+
+
+
+
