@@ -1,0 +1,82 @@
+---
+title: "Nutrition"
+author: "Mariateresa Russo"
+date: "2025-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(RedditExtractoR)
+```
+
+cerca i principali reddit in base alla keyword che inserisco tra le virgolette
+
+```{r}
+set.seed(6)
+find_subreddits("Nutrition")
+```
+si estrae la tabella dei posti all'interno del subreddit di riferimento
+content contiene due tabella: quella dei thread, cioè quello che scrive il post su reddit e quello dei comment, cioè la tabella che contiene tutti i commenti relativi ai post. L'attributo  di join di queste due tabelle è l'url. Si può costruire pure un grafo partendo da una edge list. L'edge esiste tra receiver e sender se l'url è lo stesso, altrimenti non esiste. Il grafo è direzionato, i vertici di partenza sono quelli dei commenter verso i receiver del commento, che sono coloro che scrivono i threads su reddit.
+```{r}
+thread_ = find_thread_urls(subreddit = "healthyeating", sort_by = "hot")
+thread_
+content_ = get_thread_content(thread_$url)
+content_
+```
+
+
+
+```{r}
+threads_nutrition = content_$threads
+comments_nutrition = content_$comments
+# Ora puoi lavorare con dplyr::select
+
+df_nutrition_threads <- threads_nutrition %>%
+  select(author, score, upvotes, author, title, text, comments)
+
+df_nutrition_comments <- comments_nutrition %>%
+  select(author, score, upvotes, author, comment, comment_id)
+
+df_nutrition_threads = as_tibble(df_nutrition_threads)
+df_nutrition_comments = as_tibble(df_nutrition_comments)
+```
+
+```{r}
+library(openxlsx)
+library(dplyr)
+  
+write.csv(df_nutrition_threads, "nutrition_threads.csv", row.names = FALSE)
+write.csv(df_nutrition_comments, "nutrition_comments.csv", row.names = FALSE)
+```
+
+
+
+
+
+
+
+```{r}
+find_subreddits("oncology nutrition")
+```
+
+```{r}
+thread_2 = find_thread_urls(subreddit = "dietetics", sort_by = "hot")
+thread_2
+content_2 = get_thread_content(thread_2$url)
+content_2
+```
+
+threads_nutrition = content_$threads
+comments_nutrition = content_$comments
+# Ora puoi lavorare con dplyr::select
+
+df_nutrition_threads <- threads_nutrition %>%
+  select(author, score, upvotes, author, title, text, comments)
+
+df_nutrition_comments <- comments_nutrition %>%
+  select(author, score, upvotes, author, comment, comment_id)
+
+df_nutrition_threads = as_tibble(df_nutrition_threads)
+df_nutrition_comments = as_tibble(df_nutrition_comments)
+write.csv(df_nutrition_threads, "nutrition_threads.csv", row.names = FALSE)
+write.csv(df_nutrition_comments, "nutrition_comments.csv", row.names = FALSE)

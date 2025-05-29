@@ -11,8 +11,8 @@ library(dplyr)
 library(stringr)
 library(tm)
 
-nutrition_comments = read.csv("nutrition_comments.csv")
-nutrition_threads = read.csv("nutrition_threads.csv")
+nutrition_comments = read.csv("nutrition_comments2.csv")
+nutrition_threads = read.csv("nutrition_threads2.csv")
 
 nutrition_threads
 nutrition_comments 
@@ -28,7 +28,7 @@ nutrition_comments <- nutrition_comments %>%
 table(nutrition_threads$comments)
 table(as.numeric(nutrition_comments$thread))
 
-
+View(nutrition_threads)
 ```
 
 ```{r}
@@ -70,8 +70,7 @@ corpus <- tm_map(corpus, stripWhitespace)
 corpus_content <- sapply(corpus, as.character)
 
 df_new <- data.frame(Corpus = corpus_content)
+
+View(df_new)
 ```
-
-
-
 
