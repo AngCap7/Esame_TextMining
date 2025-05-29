@@ -10,6 +10,7 @@ library(readr)
 library(dplyr)
 library(stringr)
 library(tm)
+library(ggplot2)
 
 nutrition_comments = read.csv("nutrition_comments2.csv")
 nutrition_threads = read.csv("nutrition_threads2.csv")
@@ -27,8 +28,6 @@ nutrition_comments <- nutrition_comments %>%
 
 table(nutrition_threads$comments)
 table(as.numeric(nutrition_comments$thread))
-
-View(nutrition_threads)
 ```
 
 ```{r}
@@ -47,11 +46,12 @@ remove_short_words <- function(text) { #rimuove parole con meno di 2 lettere
   return(cleaned_text)
 }
 
+toUTF8 <- content_transformer(function(x) iconv(x, from = "", to = "UTF-8", sub = ""))
 ```
 
 
+Pulizia threads
 ```{r}
-toUTF8 <- content_transformer(function(x) iconv(x, from = "", to = "UTF-8", sub = ""))
 corpus <- VCorpus(VectorSource(nutrition_threads$text))
 corpus <- tm_map(corpus, toUTF8)
 corpus <- tm_map(corpus, content_transformer(tolower))
@@ -63,14 +63,285 @@ corpus <- tm_map(corpus, removeNumbers)
 corpus <- tm_map(corpus, removeWords, stopwords("english"))
 corpus <- tm_map(corpus, content_transformer(remove_short_words))
 corpus <- tm_map(corpus, stripWhitespace)
+
+corpus_content <- sapply(corpus, as.character)
+df_new_threads <- data.frame(Corpus = corpus_content)
+```
+
+Pulizia comments
+```{r}
+corpus2 <- VCorpus(VectorSource(nutrition_comments$comment))
+corpus2 <- tm_map(corpus2, toUTF8)
+corpus2 <- tm_map(corpus2, content_transformer(tolower))
+corpus2 <- tm_map(corpus2, content_transformer(remove_urls))
+corpus2 <- tm_map(corpus2, remove_function, "/")
+corpus2 <- tm_map(corpus2, remove_function, "'")
+corpus2 <- tm_map(corpus2, removePunctuation)
+corpus2 <- tm_map(corpus2, removeNumbers)
+corpus2 <- tm_map(corpus2, removeWords, stopwords("english"))
+corpus2 <- tm_map(corpus2, content_transformer(remove_short_words))
+corpus2 <- tm_map(corpus2, stripWhitespace)
+
+corpus_content2 <- sapply(corpus2, as.character)
+df_new_comments <- data.frame(Corpus = corpus_content2)
+```
+
+Salvataggio in csv
+```{r}
+# Rimuovi la colonna 'text' e aggiungi il testo pulito
+df_new_threads <- nutrition_threads %>%
+  select(-text) %>%
+  mutate(Cleaned_Text = df_new_threads$Corpus)
+
+# Rimuovi la colonna 'comment' e aggiungi il commento pulito
+df_new_comments <- nutrition_comments %>%
+  select(-comment) %>%
+  mutate(Cleaned_Comment = df_new_comments$Corpus)
+
+# Salvataggio in CSV
+write.csv(df_new_threads, "nutrition_threads_cleaned.csv", row.names = FALSE)
+write.csv(df_new_comments, "nutrition_comments_cleaned.csv", row.names = FALSE)
+
+```
+
+Autori più commentoni
+```{r}
+# Conteggio thread per autore
+threads_by_author <- df_new_threads %>%
+  group_by(author) %>%
+  summarise(n_threads = n()) %>%
+  arrange(desc(n_threads))
+
+threads_by_author
+
+# Conteggio commenti per autore
+comments_by_author <- df_new_comments %>%
+  group_by(author) %>%
+  summarise(n_comments = n()) %>%
+  arrange(desc(n_comments))
+
+comments_by_author
+
+```
+
+Matrice delle co occorrenze-threads
+```{r}
+suppressWarnings({
+#tdm without stemming
+tdm_1 <- DocumentTermMatrix(corpus)
+print('Term-document matrix before stemming: ')
+print(tdm_1) 
+
+#tf
+corpus <- tm_map(corpus, stemDocument, language = 'english')
+tdm <- DocumentTermMatrix(corpus)
+print('Term-document matrix after stemming: ')
+print(tdm)
+})
+
+"
+#tf-idf
+suppressWarnings({
+  tdm_1 <- DocumentTermMatrix(corpus, control = list(weighting = function(x) weightTfIdf(x, normalize = FALSE)))
+  print(tdm_1)
+  
+  corpus <- tm_map(corpus, stemDocument, language = 'english')
+})
+"
+```
+```{r}
+tdm_df <- as.data.frame(as.matrix(tdm))
+#tdm_df
+```
+
+rimozione parole rare
+```{r}
+#column frequencies
+column_frequencies <- colSums(tdm_df)
+frequency_df <- data.frame(t(column_frequencies))
+print(frequency_df)
+
+#common words and rare words
+frequency_df_transposed <- t(frequency_df)
+frequency_tbl <- as_tibble(frequency_df_transposed)
+
+quantile(frequency_tbl$V1, probs = 0.5) 
+quantile(frequency_tbl$V1, probs = 0.6) 
+quantile(frequency_tbl$V1, probs = 0.7)
+quantile(frequency_tbl$V1, probs = 0.8)
+quantile(frequency_tbl$V1, probs = 0.9)
+quantile(frequency_tbl$V1, probs = 0.95)
+quantile(frequency_tbl$V1, probs = 0.96)
+quantile(frequency_tbl$V1, probs = 0.97)
+quantile(frequency_tbl$V1, probs = 0.98)
+quantile(frequency_tbl$V1, probs = 0.99)
+quantile(frequency_tbl$V1, probs = 1)
+
+word_freq_under6 <- names(column_frequencies)[column_frequencies < 3] # tolgo tutte le parole sotto la frequenza 3
+rare_words_list <- as.list(word_freq_under6 )
+
+tdm_df <- tdm_df[, !colnames(tdm_df) %in% rare_words_list]
+
+column_frequencies <- colSums(tdm_df)
+frequency_df <- data.frame(t(column_frequencies))
+frequenze <- as.numeric(frequency_df[1, ])
+ordered_indices <- order(frequenze, decreasing = TRUE)
+ordered_frequency_df <- frequency_df[, ordered_indices]
+ordered_frequency_df 
+```
+
+```{r}
+final_df <- subset(tdm_df, select = -c(didn, don, didn, doesn, can, don,etc, hey))
+final_df<-final_df[ , -20]
+```
+
+parole più frequenti
+```{r}
+term_freq <- colSums(as.matrix(final_df))
+names(term_freq) <- colnames(final_df)
+term_freq<- subset(term_freq, term_freq>=20)
+df_plot<- data.frame(term = names(term_freq), freq = term_freq)
+
+# Plot word frequency
+df_plot<- df_plot %>%
+  top_n(30)
+
+ggplot(df_plot, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_colour_gradientn(colors = terrain.colors(10))+ xlab("Terms")+ ylab("Count")+coord_flip()
+
+```
+Words cloud
+```{r}
+suppressWarnings({
+library(wordcloud)
+library(wordcloud2)
+library(RColorBrewer)
+
+matrix <- as.matrix(tdm_df) 
+matrix <- t(matrix)
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+dfw <- data.frame(word = names(words),freq=words)
+
+set.seed(1234) 
+wordcloud(words = dfw$word, freq = dfw$freq, min.freq = 1,           
+          max.words=1000, random.order=FALSE, rot.per=0.35,            
+          colors=brewer.pal(8, "Dark2"))
+
+wordcloud2(data=dfw, size=1.6, color='random-dark', shape='pentagon')
+})
+
+```
+
+
+
+
+COMMENTI
+
+Matrice delle co occorrenze-comments
+```{r}
+suppressWarnings({
+#tdm without stemming
+tdm_2 <- DocumentTermMatrix(corpus2)
+print('Term-document matrix before stemming: ')
+print(tdm_2) 
+
+#tf
+corpus2 <- tm_map(corpus2, stemDocument, language = 'english')
+tdm2 <- DocumentTermMatrix(corpus2)
+print('Term-document matrix after stemming: ')
+print(tdm2)
+})
+
+"
+#tf-idf
+suppressWarnings({
+  tdm_2 <- DocumentTermMatrix(corpus, control = list(weighting = function(x) weightTfIdf(x, normalize = FALSE)))
+  print(tdm_2)
+  
+  corpus <- tm_map(corpus, stemDocument, language = 'english')
+})
+"
 ```
 
 
 ```{r}
-corpus_content <- sapply(corpus, as.character)
-
-df_new <- data.frame(Corpus = corpus_content)
-
-View(df_new)
+tdm_df2 <- as.data.frame(as.matrix(tdm2))
+#tdm_df
 ```
 
+rimozione parole rare
+```{r}
+#column frequencies
+column_frequencies <- colSums(tdm_df)
+frequency_df <- data.frame(t(column_frequencies))
+print(frequency_df)
+
+#common words and rare words
+frequency_df_transposed <- t(frequency_df)
+frequency_tbl <- as_tibble(frequency_df_transposed)
+
+quantile(frequency_tbl$V1, probs = 0.5) 
+quantile(frequency_tbl$V1, probs = 0.6) 
+quantile(frequency_tbl$V1, probs = 0.7)
+quantile(frequency_tbl$V1, probs = 0.8)
+quantile(frequency_tbl$V1, probs = 0.9)
+quantile(frequency_tbl$V1, probs = 0.95)
+quantile(frequency_tbl$V1, probs = 0.96)
+quantile(frequency_tbl$V1, probs = 0.97)
+quantile(frequency_tbl$V1, probs = 0.98)
+quantile(frequency_tbl$V1, probs = 0.99)
+quantile(frequency_tbl$V1, probs = 1)
+
+word_freq_under6 <- names(column_frequencies)[column_frequencies < 3] # tolgo tutte le parole sotto la frequenza 3
+rare_words_list <- as.list(word_freq_under6 )
+
+tdm_df <- tdm_df[, !colnames(tdm_df) %in% rare_words_list]
+
+column_frequencies <- colSums(tdm_df)
+frequency_df <- data.frame(t(column_frequencies))
+frequenze <- as.numeric(frequency_df[1, ])
+ordered_indices <- order(frequenze, decreasing = TRUE)
+ordered_frequency_df <- frequency_df[, ordered_indices]
+ordered_frequency_df 
+```
+
+```{r}
+final_df <- subset(tdm_df, select = -c(didn, don, didn, doesn, can, don,etc, hey))
+final_df<-final_df[ , -20]
+```
+
+parole più frequenti
+```{r}
+term_freq <- colSums(as.matrix(final_df))
+names(term_freq) <- colnames(final_df)
+term_freq<- subset(term_freq, term_freq>=20)
+df_plot<- data.frame(term = names(term_freq), freq = term_freq)
+
+# Plot word frequency
+df_plot<- df_plot %>%
+  top_n(30)
+
+ggplot(df_plot, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_colour_gradientn(colors = terrain.colors(10))+ xlab("Terms")+ ylab("Count")+coord_flip()
+
+```
+
+Words cloud
+```{r}
+suppressWarnings({
+library(wordcloud)
+library(wordcloud2)
+library(RColorBrewer)
+
+matrix <- as.matrix(tdm_df) 
+matrix <- t(matrix)
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+dfw <- data.frame(word = names(words),freq=words)
+
+set.seed(1234) 
+wordcloud(words = dfw$word, freq = dfw$freq, min.freq = 1,           
+          max.words=1000, random.order=FALSE, rot.per=0.35,            
+          colors=brewer.pal(8, "Dark2"))
+
+wordcloud2(data=dfw, size=1.6, color='random-dark', shape='pentagon')
+})
+
+```
