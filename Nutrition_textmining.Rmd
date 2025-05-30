@@ -271,77 +271,74 @@ tdm_df2 <- as.data.frame(as.matrix(tdm2))
 rimozione parole rare
 ```{r}
 #column frequencies
-column_frequencies <- colSums(tdm_df)
-frequency_df <- data.frame(t(column_frequencies))
-print(frequency_df)
+column_frequencies2 <- colSums(tdm_df2)
+frequency_df2 <- data.frame(t(column_frequencies2))
+print(frequency_df2)
 
 #common words and rare words
-frequency_df_transposed <- t(frequency_df)
-frequency_tbl <- as_tibble(frequency_df_transposed)
+frequency_df_transposed2 <- t(frequency_df2)
+frequency_tbl2 <- as_tibble(frequency_df_transposed2)
 
-quantile(frequency_tbl$V1, probs = 0.5) 
-quantile(frequency_tbl$V1, probs = 0.6) 
-quantile(frequency_tbl$V1, probs = 0.7)
-quantile(frequency_tbl$V1, probs = 0.8)
-quantile(frequency_tbl$V1, probs = 0.9)
-quantile(frequency_tbl$V1, probs = 0.95)
-quantile(frequency_tbl$V1, probs = 0.96)
-quantile(frequency_tbl$V1, probs = 0.97)
-quantile(frequency_tbl$V1, probs = 0.98)
-quantile(frequency_tbl$V1, probs = 0.99)
-quantile(frequency_tbl$V1, probs = 1)
+quantile(frequency_tbl2$V1, probs = 0.5) 
+quantile(frequency_tbl2$V1, probs = 0.6) 
+quantile(frequency_tbl2$V1, probs = 0.7)
+quantile(frequency_tbl2$V1, probs = 0.8)
+quantile(frequency_tbl2$V1, probs = 0.9)
+quantile(frequency_tbl2$V1, probs = 0.95)
+quantile(frequency_tbl2$V1, probs = 0.96)
+quantile(frequency_tbl2$V1, probs = 0.97)
+quantile(frequency_tbl2$V1, probs = 0.98)
+quantile(frequency_tbl2$V1, probs = 0.99)
+quantile(frequency_tbl2$V1, probs = 1)
 
-word_freq_under6 <- names(column_frequencies)[column_frequencies < 3] # tolgo tutte le parole sotto la frequenza 3
-rare_words_list <- as.list(word_freq_under6 )
+word_freq_under3_2 <- names(column_frequencies2)[column_frequencies2 < 3] # tolgo tutte le parole sotto la frequenza 3
+rare_words_list2 <- as.list(word_freq_under3_2 )
 
-tdm_df <- tdm_df[, !colnames(tdm_df) %in% rare_words_list]
+tdm_df2 <- tdm_df2[, !colnames(tdm_df2) %in% rare_words_list2]
 
-column_frequencies <- colSums(tdm_df)
-frequency_df <- data.frame(t(column_frequencies))
-frequenze <- as.numeric(frequency_df[1, ])
-ordered_indices <- order(frequenze, decreasing = TRUE)
-ordered_frequency_df <- frequency_df[, ordered_indices]
-ordered_frequency_df 
+column_frequencies2 <- colSums(tdm_df2)
+frequency_df2 <- data.frame(t(column_frequencies2))
+frequenze2 <- as.numeric(frequency_df2[1, ])
+ordered_indices2 <- order(frequenze2, decreasing = TRUE)
+ordered_frequency_df2 <- frequency_df2[, ordered_indices2]
+ordered_frequency_df2 
 ```
 
 ```{r}
-final_df <- subset(tdm_df, select = -c(didn, don, didn, doesn, can, don,etc, hey))
-final_df<-final_df[ , -20]
+final_df2 <- subset(tdm_df2, select = -c(didn, don, didn, doesn, can, don,etc, hey))
+final_df2<-final_df2[ , -20]
 ```
 
 parole più frequenti
 ```{r}
-term_freq <- colSums(as.matrix(final_df))
-names(term_freq) <- colnames(final_df)
-term_freq<- subset(term_freq, term_freq>=20)
-df_plot<- data.frame(term = names(term_freq), freq = term_freq)
+term_freq2 <- colSums(as.matrix(final_df2))
+names(term_freq2) <- colnames(final_df2)
+term_freq2<- subset(term_freq2, term_freq2>=20)
+df_plot2<- data.frame(term = names(term_freq2), freq = term_freq2)
 
 # Plot word frequency
-df_plot<- df_plot %>%
+df_plot2<- df_plot2 %>%
   top_n(30)
 
-ggplot(df_plot, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_colour_gradientn(colors = terrain.colors(10))+ xlab("Terms")+ ylab("Count")+coord_flip()
+ggplot(df_plot2, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_colour_gradientn(colors = terrain.colors(10))+ xlab("Terms")+ ylab("Count")+coord_flip()
 
 ```
 
 Words cloud
 ```{r}
-suppressWarnings({
-library(wordcloud)
-library(wordcloud2)
-library(RColorBrewer)
 
-matrix <- as.matrix(tdm_df) 
-matrix <- t(matrix)
-words <- sort(rowSums(matrix),decreasing=TRUE) 
-dfw <- data.frame(word = names(words),freq=words)
+
+matrix2 <- as.matrix(tdm_df2) 
+matrix2 <- t(matrix2)
+words2 <- sort(rowSums(matrix2),decreasing=TRUE) 
+dfw2 <- data.frame(word2 = names(words2),freq2 =words2)
 
 set.seed(1234) 
-wordcloud(words = dfw$word, freq = dfw$freq, min.freq = 1,           
+wordcloud(words = dfw2$word2, freq = dfw2$freq2, min.freq = 1,           
           max.words=1000, random.order=FALSE, rot.per=0.35,            
           colors=brewer.pal(8, "Dark2"))
 
-wordcloud2(data=dfw, size=1.6, color='random-dark', shape='pentagon')
-})
+wordcloud2(data=dfw2, size=1.6, color='random-dark', shape='pentagon')
+
 
 ```
