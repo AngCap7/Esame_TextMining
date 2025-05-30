@@ -326,8 +326,7 @@ ggplot(df_plot2, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_ba
 
 Words cloud
 ```{r}
-
-
+suppressWarnings({
 matrix2 <- as.matrix(tdm_df2) 
 matrix2 <- t(matrix2)
 words2 <- sort(rowSums(matrix2),decreasing=TRUE) 
@@ -340,5 +339,10 @@ wordcloud(words = dfw2$word2, freq = dfw2$freq2, min.freq = 1,
 
 wordcloud2(data=dfw2, size=1.6, color='random-dark', shape='pentagon')
 #da nacellare
-
+})
 ```
+
+
+
+
+
