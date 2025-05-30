@@ -64,6 +64,16 @@ corpus <- tm_map(corpus, removeWords, stopwords("english"))
 corpus <- tm_map(corpus, content_transformer(remove_short_words))
 corpus <- tm_map(corpus, stripWhitespace)
 
+custom_tokens <- c(
+  "t", "wasn", "didn", "haven", "mnm", "don", "ve", "ain", "t", "won", "doesn", "let", "s",
+  "doesnt", "cant", "dont", "etc", "hey", "whatnot", "thisclassic", "joe", "couldn", "re",
+  "isnt", "non", "issn", "aren", "arent", "ll", "isn", "s", "metrx", "yrs", "cvs", "alr",
+  "chestgtbackgtlegs", "kgcompared", "btw", "tbsp", "irb", "amam", "alot", "didnt", "shouldn",
+  "somethingi", "chia", "hadn", "esn", "alllll", "idk"
+)
+
+corpus <- tm_map(corpus, removeWords, custom_tokens)
+
 corpus_content <- sapply(corpus, as.character)
 df_new_threads <- data.frame(Corpus = corpus_content)
 ```
@@ -81,6 +91,8 @@ corpus2 <- tm_map(corpus2, removeNumbers)
 corpus2 <- tm_map(corpus2, removeWords, stopwords("english"))
 corpus2 <- tm_map(corpus2, content_transformer(remove_short_words))
 corpus2 <- tm_map(corpus2, stripWhitespace)
+
+corpus2 <- tm_map(corpus2, removeWords, custom_tokens)
 
 corpus_content2 <- sapply(corpus2, as.character)
 df_new_comments <- data.frame(Corpus = corpus_content2)
@@ -191,8 +203,9 @@ ordered_frequency_df
 ```
 
 ```{r}
-final_df <- subset(tdm_df, select = -c(didn, don, didn, doesn, can, don,etc, hey))
-final_df<-final_df[ , -20]
+final_df = tdm_df
+#final_df <- subset(tdm_df, select = -c(didn, don, didn, doesn, can, don,etc, hey))
+#final_df<-final_df[ , -20]
 ```
 
 parole più frequenti
@@ -305,8 +318,9 @@ ordered_frequency_df2
 ```
 
 ```{r}
-final_df2 <- subset(tdm_df2, select = -c(didn, don, didn, doesn, can, don,etc, hey))
-final_df2<-final_df2[ , -20]
+final_df2 = tdm_df2
+#final_df2 <- subset(tdm_df2, select = -c(didn, don, didn, doesn, can, don,etc, hey))
+#final_df2<-final_df2[ , -20]
 ```
 
 parole più frequenti
