@@ -367,7 +367,7 @@ diag(term_term_thr) = 0
 ```
 
 
-
+DA COMMENTARE
 ```{r}
 library(igraph)
 graph = graph_from_adjacency_matrix(term_term_thr, mode = "undirected", weighted = T)
