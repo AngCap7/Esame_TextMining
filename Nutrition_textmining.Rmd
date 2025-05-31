@@ -116,25 +116,7 @@ write.csv(df_new_comments, "nutrition_comments_cleaned.csv", row.names = FALSE)
 
 ```
 
-Autori più commentoni
-```{r}
-# Conteggio thread per autore
-threads_by_author <- df_new_threads %>%
-  group_by(author) %>%
-  summarise(n_threads = n()) %>%
-  arrange(desc(n_threads))
 
-threads_by_author
-
-# Conteggio commenti per autore
-comments_by_author <- df_new_comments %>%
-  group_by(author) %>%
-  summarise(n_comments = n()) %>%
-  arrange(desc(n_comments))
-
-comments_by_author
-
-```
 
 Matrice delle co occorrenze-threads
 ```{r}
@@ -219,9 +201,10 @@ df_plot<- data.frame(term = names(term_freq), freq = term_freq)
 df_plot<- df_plot %>%
   top_n(30)
 
-ggplot(df_plot, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_colour_gradientn(colors = terrain.colors(10))+ xlab("Terms")+ ylab("Count")+coord_flip()
+ggplot(df_plot, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_fill_gradient(low = "orange", high = "red")+ xlab("Terms")+ ylab("Count")+coord_flip()
 
 ```
+
 Words cloud
 ```{r}
 suppressWarnings({
@@ -243,6 +226,8 @@ wordcloud2(data=dfw, size=1.6, color='random-dark', shape='pentagon')
 })
 
 ```
+
+
 
 
 
@@ -334,7 +319,7 @@ df_plot2<- data.frame(term = names(term_freq2), freq = term_freq2)
 df_plot2<- df_plot2 %>%
   top_n(30)
 
-ggplot(df_plot2, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_colour_gradientn(colors = terrain.colors(10))+ xlab("Terms")+ ylab("Count")+coord_flip()
+ggplot(df_plot2, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_fill_gradient(low = "orange", high = "red")+ xlab("Terms")+ ylab("Count")+coord_flip()
 
 ```
 

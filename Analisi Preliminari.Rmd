@@ -1,0 +1,117 @@
+---
+title: "Prime analisi"
+author: "Mariateresa Russo"
+date: "2025-05-31"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(stringr)
+library(tm)
+library(plotly)
+library(ggplot2)
+
+df_new_comments = read.csv("nutrition_comments_cleaned.csv")
+df_new_threads = read.csv("nutrition_threads_cleaned.csv")
+```
+
+Autori che postano di più e autori che commentano di più
+```{r}
+# Conteggio thread per autore
+threads_by_author <- df_new_threads %>%
+  group_by(author) %>%
+  summarise(n_threads = n()) %>%
+  arrange(desc(n_threads))
+
+threads_by_author
+
+# Conteggio commenti per autore
+comments_by_author <- df_new_comments %>%
+  group_by(author) %>%
+  summarise(n_comments = n()) %>%
+  arrange(desc(n_comments))
+
+comments_by_author
+```
+
+```{r}
+# Prendi i primi 20 autori con più thread
+df_top_authors_threads <- threads_by_author %>%
+  slice_max(n_threads, n = 20)
+
+# Crea il grafico a barre orizzontali
+plot_ly(
+  df_top_authors_threads,
+  x = ~n_threads,
+  y = ~reorder(author, n_threads),
+  type = "bar",
+  orientation = "h",
+  marker = list(color = "orange")
+) %>%
+  layout(
+    title = "Top 20 autori per numero di thread",
+    xaxis = list(title = "Numero di thread"),
+    yaxis = list(title = "Autori"),
+    margin = list(l = 200)
+  )
+
+```
+```{r}
+# Prendi i primi 20 autori con più commenti
+df_top_authors_comments <- comments_by_author %>%
+  filter(author != "[deleted]") %>%
+  slice_max(n_comments, n = 20)
+
+# Crea il grafico a barre orizzontali
+plot_ly(
+  df_top_authors_comments,
+  x = ~n_comments,
+  y = ~reorder(author, n_comments),
+  type = "bar",
+  orientation = "h",
+  marker = list(color = "yellow")
+) %>%
+  layout(
+    title = "Top 20 autori per numero di commenti",
+    xaxis = list(title = "Numero di commenti"),
+    yaxis = list(title = "Autori"),
+    margin = list(l = 200)
+  )
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+# Pulisci i commenti: rimuovi [deleted] e crea il "gruppo" della conversazione
+df_clean <- df_new_comments %>%
+  filter(author != "[deleted]") %>%
+  mutate(comment_group = sub("_.*", "", comment_id))  # es. da "2_1_3" ottieni "2"
+
+# Costruisci le coppie autore-autore per ogni gruppo thread+comment_group
+co_commenters <- df_clean %>%
+  select(thread, comment_group, author) %>%
+  distinct() %>%
+  group_by(thread, comment_group) %>%
+  filter(n_distinct(author) > 1) %>%
+  summarise(pairs = list(as.data.frame(t(combn(sort(unique(author)), 2)))), .groups = "drop") %>%
+  unnest(pairs) %>%
+  rename(Source = V1, Target = V2) %>%
+  group_by(Source, Target) %>%
+  summarise(weight = n(), .groups = "drop")
+
+# Esporta per Gephi
+write.csv(co_commenters, "comment_network_edges.csv", row.names = FALSE)
+
+# Nodi
+nodes <- unique(c(co_commenters$Source, co_commenters$Target))
+nodes_df <- data.frame(Id = nodes, Label = nodes)
+write.csv(nodes_df, "comment_network_nodes.csv", row.names = FALSE)
+
+```
+
+
+
+

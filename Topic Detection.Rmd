@@ -1,0 +1,118 @@
+---
+title: "Topic detection"
+author: "Mariateresa Russo"
+date: "2025-05-31"
+output: html_document
+---
+```{r}
+library(tidyverse)
+library(tidytext)
+library(topicmodels)
+library(readr)
+library(dplyr)
+library(stringr)
+library(tm)
+library(plotly)
+library(ggplot2)
+
+df_new_comments = read.csv("nutrition_comments_cleaned.csv")
+df_new_threads = read.csv("nutrition_threads_cleaned.csv")
+```
+
+```{r}
+
+# Preprocessing: tokenizzazione + rimozione stopwords
+tidy_titles <- df_new_threads %>%
+  mutate(doc_id = row_number()) %>%
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words)
+
+# Creazione della Document-Term Matrix
+dtm <- tidy_titles %>%
+  count(doc_id, word) %>%
+  cast_dtm(doc_id, word, n)
+
+# Applica LDA (scegli numero topic, es. 4)
+lda_model <- LDA(dtm, k = 4, control = list(seed = 123))
+
+# Vedi parole chiave per ogni topic
+topics <- tidy(lda_model, matrix = "beta")  # beta = probabilità parola|topic
+
+top_terms <- topics %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+# Visualizzazione semplice
+top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_x_reordered() +
+  coord_flip() +
+  labs(title = "Top terms per topic", x = "", y = "Beta (importance)")
+
+```
+Ecco i 4 topic rilevati:
+
+Pratica clinica e gestione del peso
+(rds, clinical, experience, weight, loss)
+
+Nutrizione generale e consigli per i pazienti
+(nutrition, advice, pay, dietician, protein)
+
+Carriera professionale nel campo della dietetica
+(dietitian, career, dietitians, job, dietetics)
+
+Libera professione e regolamentazione
+(practice, nutrition, private, cdr, rds)
+
+
+
+
+
+
+
+
+
+
+
+
+COMMENTI
+```{r}
+# Preprocessing: tokenizzazione + rimozione stopwords
+tidy_titles <- df_new_comments %>%
+  mutate(doc_id = row_number()) %>%
+  unnest_tokens(word, Cleaned_Comment) %>%
+  anti_join(stop_words)
+
+# Creazione della Document-Term Matrix
+dtm <- tidy_titles %>%
+  count(doc_id, word) %>%
+  cast_dtm(doc_id, word, n)
+
+# Applica LDA (scegli numero topic, es. 4)
+lda_model <- LDA(dtm, k = 4, control = list(seed = 123))
+
+# Vedi parole chiave per ogni topic
+topics <- tidy(lda_model, matrix = "beta")  # beta = probabilità parola|topic
+
+top_terms <- topics %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+# Visualizzazione semplice
+top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_x_reordered() +
+  coord_flip() +
+  labs(title = "Top terms per topic", x = "", y = "Beta (importance)")
+```
+
