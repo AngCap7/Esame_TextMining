@@ -356,7 +356,7 @@ wordcloud2(data=dfw2, size=1.6, color='random-dark', shape='pentagon')
 })
 ```
 
-
+Costruzione matrice Term Term 
 ```{r}
 frequenze_tdm <- colSums(tdm_df)  # df è la tua DTM come data.frame
 
@@ -364,21 +364,14 @@ tdm_filt <- tdm_df[, frequenze_tdm > 20]
 term_term_thr = t(as.matrix(tdm_filt)) %*% as.matrix(tdm_filt)
 
 diag(term_term_thr) = 0
+
+adj_matrix_thr <- as.data.frame(term_term_thr)
+
+adj_matrix_thr <- cbind(term = rownames(adj_matrix_thr), adj_matrix_thr)
+
+library(openxlsx)
+
+write.xlsx(adj_matrix_thr, file = "adjacency_matrix_thr.xlsx", rowNames = FALSE)
 ```
-
-
-DA COMMENTARE
-```{r}
-library(igraph)
-graph = graph_from_adjacency_matrix(term_term_thr, mode = "undirected", weighted = T)
-
-cluster = cluster_louvain(graph)
-
-plot(graph,
-     vertex.size = degree(graph)/15,
-     vertex.label.cex = 0.7,
-     vertex.color = membership(cluster))
-```
-
 
 
