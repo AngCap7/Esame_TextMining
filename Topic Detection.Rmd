@@ -5,19 +5,27 @@ date: "2025-05-31"
 output: html_document
 ---
 ```{r}
-library(tidyverse)
-library(tidytext)
-library(topicmodels)
-library(readr)
-library(dplyr)
-library(stringr)
+library(knitr) 
+library(kableExtra) 
+library(DT)
 library(tm)
-library(plotly)
+library(topicmodels)
+library(reshape2)
 library(ggplot2)
+library(wordcloud)
+library(pals)
+library(SnowballC)
+library(lda)
+library(ldatuning)
+library(flextable)
 
 df_new_comments = read.csv("nutrition_comments_cleaned.csv")
 df_new_threads = read.csv("nutrition_threads_cleaned.csv")
+
+combined_df <- data.frame(Cleaned_Text = c(df_new_threads$Cleaned_text, df_new_comments$Cleaned_Comment))
+
 ```
+Lettura del Corpus
 
 ```{r}
 
