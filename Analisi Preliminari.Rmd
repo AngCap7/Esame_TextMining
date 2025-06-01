@@ -12,6 +12,7 @@ library(stringr)
 library(tm)
 library(plotly)
 library(ggplot2)
+library(igraph)
 
 df_new_comments = read.csv("nutrition_comments_cleaned.csv")
 df_new_threads = read.csv("nutrition_threads_cleaned.csv")
@@ -81,6 +82,7 @@ plot_ly(
   )
 ```
 
+Autori che interagiscono tra loro PROVATE CON DIVERSI PACCHETTI PER LE RETI:gggraph visNetwork Networkd3 ecc.
 ```{r}
 library(dplyr)
 library(tidyr)
@@ -112,6 +114,56 @@ write.csv(nodes_df, "comment_network_nodes.csv", row.names = FALSE)
 
 ```
 
+```{r}
+# Filtra archi per peso
+filtered_edges <- co_commenters %>% filter(weight >= 5)
+
+# Crea grafo
+g <- graph_from_data_frame(filtered_edges, directed = FALSE)
+
+# Ricalcola layout
+layout <- layout_with_graphopt(g)
+layout_df <- as.data.frame(layout)
+colnames(layout_df) <- c("x", "y")
+layout_df$label <- V(g)$name
+deg <- degree(g)
+layout_df$size <- scales::rescale(deg, to = c(5, 15))  # dimensione proporzionale
+
+# Edges
+edges <- get.edgelist(g, names = FALSE)
+edges_df <- data.frame(
+  x = layout_df$x[edges[,1]],
+  y = layout_df$y[edges[,1]],
+  xend = layout_df$x[edges[,2]],
+  yend = layout_df$y[edges[,2]]
+)
+
+# Visualizzazione plotly
+plot_ly() %>%
+  add_segments(
+    data = edges_df,
+    x = ~x, y = ~y, xend = ~xend, yend = ~yend,
+    line = list(color = 'rgba(150,150,150,0.2)', width = 0.5),
+    hoverinfo = 'none',
+    showlegend = FALSE
+  ) %>%
+  add_trace(
+    data = layout_df,
+    x = ~x, y = ~y,
+    type = 'scatter', mode = 'markers+text',
+    text = ~label,
+    hoverinfo = 'text',
+    marker = list(size = ~size, color = 'red', opacity = 0.8),
+    textposition = 'top center'
+  ) %>%
+  layout(
+    title = "Filtered Co-commenters Network (weight ≥ 5)",
+    xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+    yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+    plot_bgcolor = 'white'
+  )
+
+```
 
 
 
