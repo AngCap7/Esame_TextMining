@@ -13,10 +13,26 @@ library(tm)
 library(plotly)
 library(ggplot2)
 library(igraph)
+library(tidyverse)
+library(igraph)
+library(tidygraph)
+library(ggraph)
 library(tidyr)
 
 df_new_comments = read.csv("nutrition_comments_cleaned.csv")
 df_new_threads = read.csv("nutrition_threads_cleaned.csv")
+```
+
+dataframe unito per thread e comments
+```{r}
+# Crea una copia di df_new_comments
+df_result <- df_new_comments %>%
+  mutate(
+    threads_text = df_new_threads$Cleaned_Text[thread],
+    title = df_new_threads$title[thread],
+    threads_score = df_new_threads$score[thread]
+  )
+df_result
 ```
 
 
@@ -105,13 +121,12 @@ plot_ly() %>%
 
 
 
-
-
-
-
 2) RELAZIONI TRA PAROLE (ONE MODE)
+
+Rete parole-parole per i threads
+DA FARE CON DIVERSE WINDOW SIZE
 ```{r}
-frequenze_tdm <- colSums(tdm_df)  # df è la tua DTM come data.frame
+frequenze_tdm <- colSums(tdm_df)  # tdm_df è la tua DTM che sta in Nutrition_textmining
 
 tdm_filt <- tdm_df[, frequenze_tdm > 30]
 term_term_thr = t(as.matrix(tdm_filt)) %*% as.matrix(tdm_filt)
@@ -130,8 +145,48 @@ write.xlsx(adj_matrix_thr, file = "adjacency_matrix_thr.xlsx", rowNames = FALSE)
 
 
 
-3) RELAZIONI AUTORI PAROLE (TWO-MODE)
+3) RELAZIONI AUTORI PAROLE O AUTORI THREADS (TWO-MODE)
 
+Autori per ogni thread
+```{r}
+library(dplyr)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+
+# Aggiungi la colonna threads_score a df_result (se non l'hai ancora)
+df_result <- df_result %>%
+  mutate(threads_score = df_new_threads$score[thread])
+
+# Crea i dati edge (autori-thread) filtrando per threads_score > 50
+author_thread_edges <- df_result %>%
+  filter(author != "[deleted]", threads_score > 150) %>%
+  group_by(author, thread) %>%
+  summarise(weight = n(), .groups = "drop") %>%
+  arrange(desc(weight))
+
+# Crea i nodi (autori e thread) con etichetta di gruppo
+author_thread_nodes <- tibble(
+  name = unique(c(author_thread_edges$author, author_thread_edges$thread)),
+  group = if_else(name %in% author_thread_edges$author, "author", "thread")
+)
+
+# Crea il grafo
+graph <- graph_from_data_frame(author_thread_edges, vertices = author_thread_nodes)
+
+# Converti in tidygraph
+graph_tbl <- as_tbl_graph(graph)
+
+# Visualizza con ggraph
+ggraph(graph_tbl, layout = "fr") +
+  geom_edge_link(aes(width = weight), alpha = 0.6) +
+  geom_node_point(aes(color = group), size = 5) +
+  geom_node_text(aes(label = name), repel = TRUE, size = 3) +
+  theme_void() +
+  ggtitle("Network tra Autori e Thread (Score > 150)") +
+  scale_edge_width(range = c(0.5, 2))
+
+```
 
 
 
