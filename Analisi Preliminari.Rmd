@@ -113,6 +113,41 @@ p4 <- ggplot(title_words[1:40,], aes(x = reorder(word, n), y = n)) +
 ggplotly(p4)
 ```
 
+Threads con più score
+Score = Upvotes − Downvotes
+```{r}
+top_threads_by_score <- df_new_threads %>%
+  arrange(desc(score)) %>%
+  slice_head(n = 30)
+
+plot_ly(top_threads_by_score, 
+        x = ~score, 
+        y = ~reorder(title, score), 
+        type = 'bar', 
+        orientation = 'h',
+        marker = list(color = 'yellow')) %>%
+  layout(title = "Top Thread per Score",
+         xaxis = list(title = "Score"),
+         yaxis = list(title = ""))
+```
+
+Threads con più upvotes
+```{r}
+top_threads_by_upvotes <- df_new_threads %>%
+  arrange(desc(upvotes)) %>%
+  slice_head(n = 30)
+
+plot_ly(top_threads_by_upvotes, 
+        x = ~upvotes, 
+        y = ~reorder(title, upvotes), 
+        type = 'bar', 
+        orientation = 'h',
+        marker = list(color = 'darkorange')) %>%
+  layout(title = "Top Thread per Upvotes",
+         xaxis = list(title = "Upvotes"),
+         yaxis = list(title = ""))
+
+```
 
 
 

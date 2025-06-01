@@ -213,3 +213,8 @@ links <- data.frame(source = match(df_new_comments$thread, nodes$name) - 1,
                     target = match(df_new_comments$comment_id, nodes$name) - 1,
                     value = 1)
 ```
+
+
+
+
+4) ERGM
