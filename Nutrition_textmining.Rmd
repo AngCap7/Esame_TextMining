@@ -263,7 +263,7 @@ ordered_frequency_df2
 ```{r}
 final_df2 = tdm_df2
 #final_df2 <- subset(tdm_df2, select = -c(didn, don, didn, doesn, can, don,etc, hey))
-#final_df2<-final_df2[ , -20]
+final_df2<-final_df2[ , -1]
 ```
 
 
