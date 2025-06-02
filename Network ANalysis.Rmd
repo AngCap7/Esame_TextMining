@@ -277,3 +277,19 @@ links <- data.frame(source = match(df_new_comments$thread, nodes$name) - 1,
 
 
 4) ERGM
+
+```{r}
+library(ergm)
+library(network)
+
+adj_threads = as.matrix(term_term_thr)
+
+term_net <- network(adj_threads, directed = FALSE, matrix.type = "adjacency")
+
+model <- ergm(term_net ~ edges)
+summary(model)
+
+sim <- simulate(model, nsim = 1)
+plot(sim)
+```
+

@@ -195,7 +195,7 @@ final_df_threads <- tdm_df_threads
 ```
 
 #codice vecchio per matrice term-term
-```{r 
+```{r} 
 library(text2vec)
 
 corpus_char <- sapply(corpus, content)
