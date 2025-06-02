@@ -8,6 +8,10 @@ PULIZIA INIZIALE
 ```{r}
 library(readr)
 library(dplyr)
+library(tidyr)
+library(purrr)
+library(combinat)
+library(dplyr)
 library(stringr)
 library(tm)
 library(ggplot2)
@@ -116,20 +120,21 @@ write.csv(df_new_comments, "nutrition_comments_cleaned.csv", row.names = FALSE)
 
 ```
 
+THREADS 
 
 Term document matrix
 ```{r}
 suppressWarnings({
 #tdm without stemming
-tdm_1 <- DocumentTermMatrix(corpus)
+tdm_1x <- DocumentTermMatrix(corpus)
 print('Term-document matrix before stemming: ')
-print(tdm_1) 
+print(tdm_1x) 
 
 #tf
 corpus <- tm_map(corpus, stemDocument, language = 'english')
-tdm <- DocumentTermMatrix(corpus)
+tdm_1 <- DocumentTermMatrix(corpus)
 print('Term-document matrix after stemming: ')
-print(tdm)
+print(tdm_1)
 })
 
 "
@@ -143,14 +148,14 @@ suppressWarnings({
 "
 ```
 ```{r}
-tdm_df <- as.data.frame(as.matrix(tdm))
+tdm_df_threads <- as.data.frame(as.matrix(tdm_1))
 #tdm_df
 ```
 
 rimozione parole rare
 ```{r}
 #column frequencies
-column_frequencies <- colSums(tdm_df)
+column_frequencies <- colSums(tdm_df_threads)
 frequency_df <- data.frame(t(column_frequencies))
 print(frequency_df)
 
@@ -173,9 +178,9 @@ quantile(frequency_tbl$V1, probs = 1)
 word_freq_under6 <- names(column_frequencies)[column_frequencies < 30] # tolgo tutte le parole sotto la frequenza 3
 rare_words_list <- as.list(word_freq_under6 )
 
-tdm_df <- tdm_df[, !colnames(tdm_df) %in% rare_words_list]
+tdm_df_threads <- tdm_df_threads[, !colnames(tdm_df_threads) %in% rare_words_list]
 
-column_frequencies <- colSums(tdm_df)
+column_frequencies <- colSums(tdm_df_threads)
 frequency_df <- data.frame(t(column_frequencies))
 frequenze <- as.numeric(frequency_df[1, ])
 ordered_indices <- order(frequenze, decreasing = TRUE)
@@ -184,13 +189,13 @@ ordered_frequency_df
 ```
 
 ```{r}
-final_df = tdm_df
-#final_df <- subset(tdm_df, select = -c(didn, don, didn, doesn, can, don,etc, hey))
+final_df_threads <- tdm_df_threads
+#final_df <- subset(tdm_df_threads, select = -c(didn, don, didn, doesn, can, don,etc, hey))
 #final_df<-final_df[ , -20]
 ```
 
-
-```{r}
+#codice vecchio per matrice term-term
+```{r 
 library(text2vec)
 
 corpus_char <- sapply(corpus, content)
@@ -225,15 +230,15 @@ Term document matrix
 ```{r}
 suppressWarnings({
 #tdm without stemming
-tdm_2 <- DocumentTermMatrix(corpus2)
+tdm_2x <- DocumentTermMatrix(corpus2)
 print('Term-document matrix before stemming: ')
-print(tdm_2) 
+print(tdm_2x) 
 
 #tf
 corpus2 <- tm_map(corpus2, stemDocument, language = 'english')
-tdm2 <- DocumentTermMatrix(corpus2)
+tdm_2 <- DocumentTermMatrix(corpus2)
 print('Term-document matrix after stemming: ')
-print(tdm2)
+print(tdm_2)
 })
 
 "
@@ -249,14 +254,14 @@ suppressWarnings({
 
 
 ```{r}
-tdm_df2 <- as.data.frame(as.matrix(tdm2))
+tdm_df_comments <- as.data.frame(as.matrix(tdm_2))
 #tdm_df
 ```
 
 rimozione parole rare
 ```{r}
 #column frequencies
-column_frequencies2 <- colSums(tdm_df2)
+column_frequencies2 <- colSums(tdm_df_comments)
 frequency_df2 <- data.frame(t(column_frequencies2))
 print(frequency_df2)
 
@@ -279,9 +284,9 @@ quantile(frequency_tbl2$V1, probs = 1)
 word_freq_under3_2 <- names(column_frequencies2)[column_frequencies2 < 10] # tolgo tutte le parole sotto la frequenza 3
 rare_words_list2 <- as.list(word_freq_under3_2 )
 
-tdm_df2 <- tdm_df2[, !colnames(tdm_df2) %in% rare_words_list2]
+tdm_df_comments <- tdm_df_comments[, !colnames(tdm_df_comments) %in% rare_words_list2]
 
-column_frequencies2 <- colSums(tdm_df2)
+column_frequencies2 <- colSums(tdm_df_comments)
 frequency_df2 <- data.frame(t(column_frequencies2))
 frequenze2 <- as.numeric(frequency_df2[1, ])
 ordered_indices2 <- order(frequenze2, decreasing = TRUE)
@@ -290,10 +295,70 @@ ordered_frequency_df2
 ```
 
 ```{r}
-final_df2 = tdm_df2
-#final_df2 <- subset(tdm_df2, select = -c(didn, don, didn, doesn, can, don,etc, hey))
-final_df2<-final_df2[ , -1]
+final_df_comments = tdm_df_comments
+#final_df2 <- subset(tdm_df_comments, select = -c(didn, don, didn, doesn, can, don,etc, hey))
+final_df_comments<-final_df_comments[ , -1]
 ```
 
 
+DATAFRAMES PER FARE LE RETI ONE MODE PAROLE-PAROLE SU GEPHI
+
+parole-parole nei threads
+```{r}
+rownames(final_df_threads) <- NULL
+final_df_threads 
+
+all_edges_threads <- list()
+for (i in 1:nrow(final_df_threads)) {
+  words_in_doc_t <- names(final_df_threads)[final_df_threads[i, ] == 1]
+  
+  # Se almeno due parole presenti, crea combinazioni a coppie
+  if (length(words_in_doc_t) >= 2) {
+    pairs <- combn(words_in_doc_t, 2, simplify = FALSE)
+    all_edges_threads <- append(all_edges_threads, pairs)
+  }
+}
+
+# Trasforma le combinazioni in un dataframe Source-Target
+edges_df_threads <- do.call(rbind, lapply(all_edges_threads, function(x) data.frame(Source = x[1], Target = x[2])))
+
+# Grafo non direzionato
+edges_df_threads <- distinct(edges_df_threads)
+
+edges_df_threads
+
+write.csv(edges_df_threads, "edges_df_threads.csv", row.names = FALSE)
+```
+
+parole-parole nei comments
+```{r}
+rownames(final_df_comments) <- NULL
+final_df_comments 
+
+all_edges_comments <- list()
+for (i in 1:nrow(final_df_comments)) {
+  words_in_doc_c <- names(final_df_comments)[final_df_comments[i, ] == 1]
+  
+  # Se almeno due parole presenti, crea combinazioni a coppie
+  if (length(words_in_doc_c) >= 2) {
+    pairsc <- combn(words_in_doc_c, 2, simplify = FALSE)
+    all_edges_comments <- append(all_edges_comments, pairsc)
+  }
+}
+
+# Trasforma le combinazioni in un dataframe Source-Target
+edges_df_comments <- do.call(rbind, lapply(all_edges_comments, function(x) data.frame(Source = x[1], Target = x[2])))
+
+# Grafo non direzionato
+edges_df_comments <- distinct(edges_df_comments)
+
+edges_df_comments
+
+write.csv(edges_df_comments, "edges_df_comments.csv", row.names = FALSE)
+```
+
+
+
+
+```
 
