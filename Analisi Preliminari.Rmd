@@ -149,5 +149,72 @@ plot_ly(top_threads_by_upvotes,
 
 ```
 
+parole più frequenti-threads
+```{r}
+term_freq <- colSums(as.matrix(final_df))
+names(term_freq) <- colnames(final_df)
+term_freq<- subset(term_freq, term_freq>=20)
+df_plot<- data.frame(term = names(term_freq), freq = term_freq)
 
+# Plot word frequency
+df_plot<- df_plot %>%
+  top_n(30)
 
+ggplot(df_plot, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_fill_gradient(low = "orange", high = "red")+ xlab("Terms")+ ylab("Count")+coord_flip()
+
+```
+
+Words cloud-threads
+```{r}
+suppressWarnings({
+library(wordcloud)
+library(wordcloud2)
+library(RColorBrewer)
+
+matrix <- as.matrix(tdm_df) 
+matrix <- t(matrix)
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+dfw <- data.frame(word = names(words),freq=words)
+
+set.seed(1234) 
+wordcloud(words = dfw$word, freq = dfw$freq, min.freq = 1,           
+          max.words=1000, random.order=FALSE, rot.per=0.35,            
+          colors=brewer.pal(8, "Dark2"))
+
+wordcloud2(data=dfw, size=1.6, color='random-dark', shape='pentagon')
+})
+
+```
+
+parole più frequenti-comments
+```{r}
+term_freq2 <- colSums(as.matrix(final_df2))
+names(term_freq2) <- colnames(final_df2)
+term_freq2<- subset(term_freq2, term_freq2>=20)
+df_plot2<- data.frame(term = names(term_freq2), freq = term_freq2)
+
+# Plot word frequency
+df_plot2<- df_plot2 %>%
+  top_n(30)
+
+ggplot(df_plot2, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_bar(stat = "identity")+ scale_fill_gradient(low = "orange", high = "red")+ xlab("Terms")+ ylab("Count")+coord_flip()
+
+```
+
+Words cloud-comments
+```{r}
+suppressWarnings({
+matrix2 <- as.matrix(tdm_df2) 
+matrix2 <- t(matrix2)
+words2 <- sort(rowSums(matrix2),decreasing=TRUE) 
+dfw2 <- data.frame(word2 = names(words2),freq2 =words2)
+
+set.seed(1234) 
+wordcloud(words = dfw2$word2, freq = dfw2$freq2, min.freq = 1,           
+          max.words=1000, random.order=FALSE, rot.per=0.35,            
+          colors=brewer.pal(8, "Dark2"))
+
+wordcloud2(data=dfw2, size=1.6, color='random-dark', shape='pentagon')
+#da nacellare
+})
+```

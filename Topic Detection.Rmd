@@ -16,7 +16,6 @@ library(wordcloud)
 library(pals)
 library(SnowballC)
 library(lda)
-library(ldatuning)
 library(flextable)
 
 df_new_comments = read.csv("nutrition_comments_cleaned.csv")
@@ -25,7 +24,64 @@ df_new_threads = read.csv("nutrition_threads_cleaned.csv")
 combined_df <- data.frame(Cleaned_Text = c(df_new_threads$Cleaned_text, df_new_comments$Cleaned_Comment))
 
 ```
+
 Lettura del Corpus
+Term Document Matrix
+```{r}
+# Trova tutte le colonne presenti in entrambi i dataframe
+all_cols <- union(names(final_df), names(final_df2))
+
+# Aggiungi le colonne mancanti in final_df, con valore 0
+for (col in setdiff(all_cols, names(final_df))) {
+  final_df[[col]] <- 0
+}
+# Aggiungi le colonne mancanti in final_df2, con valore 0
+for (col in setdiff(all_cols, names(final_df2))) {
+  final_df2[[col]] <- 0
+}
+# Riordina le colonne in entrambi i dataframe per avere lo stesso ordine
+final_df <- final_df[ , all_cols]
+final_df2 <- final_df2[ , all_cols]
+# Concatena con rbind
+final_df_combined <- rbind(final_df, final_df2)
+
+final_df
+final_df2
+final_df_combined
+
+DTM <- final_df_combined
+```
+
+rimozione documenti vuoti
+```{r}
+sel_idx <- slam::row_sums(DTM) > 0
+DTM <- DTM[sel_idx, ]
+```
+
+tuning per trovare il numero ottimale di topics----DA MIGLIORARE  O RIMUOVERE
+```{r}
+library(topicmodels)
+
+seq_k <- 2:7
+log_liks <- numeric(length(seq_k))
+
+for (i in seq_along(seq_k)) {
+  lda_model <- LDA(DTM, k = seq_k[i], method = "Gibbs", control = list(seed = 77))
+  log_liks[i] <- logLik(lda_model)
+}
+
+plot(seq_k, log_liks, type = "b", xlab = "Numero di topics", ylab = "Log-likelihood")
+```
+
+```{r}
+set.seed(9161)
+# compute the LDA model, inference via 1000 iterations of Gibbs sampling
+topicModel <- LDA(DTM, 5, method="Gibbs", control=list(iter = 500, verbose = 25))
+topicModel
+```
+
+
+
 
 ```{r}
 
