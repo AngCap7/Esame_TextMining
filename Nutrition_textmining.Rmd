@@ -170,7 +170,7 @@ quantile(frequency_tbl$V1, probs = 0.98)
 quantile(frequency_tbl$V1, probs = 0.99)
 quantile(frequency_tbl$V1, probs = 1)
 
-word_freq_under6 <- names(column_frequencies)[column_frequencies < 3] # tolgo tutte le parole sotto la frequenza 3
+word_freq_under6 <- names(column_frequencies)[column_frequencies < 30] # tolgo tutte le parole sotto la frequenza 3
 rare_words_list <- as.list(word_freq_under6 )
 
 tdm_df <- tdm_df[, !colnames(tdm_df) %in% rare_words_list]
@@ -187,6 +187,35 @@ ordered_frequency_df
 final_df = tdm_df
 #final_df <- subset(tdm_df, select = -c(didn, don, didn, doesn, can, don,etc, hey))
 #final_df<-final_df[ , -20]
+```
+
+
+```{r}
+library(text2vec)
+
+corpus_char <- sapply(corpus, content)
+
+# 1. Tokenizzazione del corpus
+tokens_thr <- itoken(corpus_char, tokenizer = word_tokenizer, progressbar = FALSE)
+
+# 2. Ottieni il vocabolario delle parole in final_df
+# Supponiamo che le colonne di final_df siano i termini
+vocab_terms_thr <- colnames(final_df)
+
+# 3. Crea il vocabolario solo con questi termini
+vocab_thr <- create_vocabulary(tokens_thr)
+#vocab_thr <- prune_vocabulary(vocab_thr, term_count_min = 10)
+vocab_thr <- vocab_thr[vocab_thr$term %in% vocab_terms_thr, ]
+
+# 4. Crea il vettorizzatore con il vocabolario filtrato
+vectorizer_thr <- vocab_vectorizer(vocab_thr)
+
+# 5. Crea la matrice di co-occorrenza (Term-Term Matrix)
+term_term_thr <- create_tcm(tokens_thr,
+                            vectorizer_thr,
+                            skip_grams_window = 3,
+                            skip_grams_window_context = "right")
+
 ```
 
 
@@ -247,7 +276,7 @@ quantile(frequency_tbl2$V1, probs = 0.98)
 quantile(frequency_tbl2$V1, probs = 0.99)
 quantile(frequency_tbl2$V1, probs = 1)
 
-word_freq_under3_2 <- names(column_frequencies2)[column_frequencies2 < 3] # tolgo tutte le parole sotto la frequenza 3
+word_freq_under3_2 <- names(column_frequencies2)[column_frequencies2 < 10] # tolgo tutte le parole sotto la frequenza 3
 rare_words_list2 <- as.list(word_freq_under3_2 )
 
 tdm_df2 <- tdm_df2[, !colnames(tdm_df2) %in% rare_words_list2]
@@ -266,8 +295,5 @@ final_df2 = tdm_df2
 final_df2<-final_df2[ , -1]
 ```
 
-
-Matrice delle co-occorrenze con differenti window sizes
-DA FARE
 
 

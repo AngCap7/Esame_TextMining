@@ -18,10 +18,12 @@ library(igraph)
 library(tidygraph)
 library(ggraph)
 library(tidyr)
+library(robin)
 
 df_new_comments = read.csv("nutrition_comments_cleaned.csv")
 df_new_threads = read.csv("nutrition_threads_cleaned.csv")
 ```
+
 
 dataframe unito per thread e comments
 ```{r}
@@ -34,6 +36,7 @@ df_result <- df_new_comments %>%
   )
 df_result
 ```
+
 
 
 1) RELAZIONI TRA AUTORI (ONE MODE)
@@ -67,6 +70,7 @@ nodes_df <- data.frame(Source = nodes, Target = nodes)
 write.csv(nodes_df, "authors_network_nodes.csv", row.names = FALSE)
 
 ```
+
 
 ```{r}
 # Filtra archi per peso
@@ -123,23 +127,78 @@ plot_ly() %>%
 
 2) RELAZIONI TRA PAROLE (ONE MODE)
 
+
+```{r}
+g <- graph_from_adjacency_matrix(as.matrix(term_term_thr), 
+                                 mode = "undirected", 
+                                 weighted = TRUE, 
+                                 diag = FALSE)
+
+plot(g, layout = layout_with_fr,
+     vertex.size = 5,
+     vertex.label.cex = 0.7,
+     edge.width = E(g)$weight / max(E(g)$weight) * 5)
+```
+OverLapping community detection
+```{r}
+library(linkcomm)
+
+terms_thr <- colnames(term_term_thr)
+
+# 2. Estrai gli indici non nulli dalla matrice sparsa
+edges_thr <- data.frame(
+  Source = terms_thr[term_term_thr@i + 1],    # row indices (0-based → +1)
+  Target = terms_thr[term_term_thr@j + 1],    # column indices
+  Weight = term_term_thr@x               # values (co-occurrence)
+)
+
+# 3. Rimuovi self-loop (opzionale ma consigliato)
+edges_thr <- subset(edges_thr, Source != Target)
+
+# 4. Rimuovi archi con peso basso (es. < 3) per ridurre rumore
+edges_thr <- subset(edges_thr, Weight >= 2)
+
+
+lc_thr <- getLinkCommunities(edges_thr, hcmethod = "average", directed = FALSE)
+
+
+# Disegna le comunità
+plot(
+  lc_thr,
+  type = "graph",
+  layout = layout_with_fr, # layout Fruchterman-Reingold (più leggibile)
+  vertex.size = 16,               # dimensione nodi più piccol             
+  edge.color = "grey80",         # archi più chiari
+  edge.width = 0.2,                # archi più sottili
+  show.comm = TRUE,             # mostra i colori delle comunità
+  vertex.label.cex = 0.4,        # (se usi le etichette)
+  main = "Overlapping Link Communities"
+)
+
+```
+
+```{r}
+write.xlsx(edges_thr, file = "term_term.xlsx", rowNames = FALSE)
+```
+
+
 Rete parole-parole per i threads
 DA FARE CON DIVERSE WINDOW SIZE
 ```{r}
-frequenze_tdm <- colSums(tdm_df)  # tdm_df è la tua DTM che sta in Nutrition_textmining
+#frequenze_tdm <- colSums(tdm_df)  # tdm_df è la tua DTM che sta in Nutrition_textmining
 
-tdm_filt <- tdm_df[, frequenze_tdm > 30]
-term_term_thr = t(as.matrix(tdm_filt)) %*% as.matrix(tdm_filt)
+#tdm_filt <- tdm_df[, frequenze_tdm > 15]
+#term_term_thr = t(as.matrix(tdm_filt)) %*% as.matrix(tdm_filt)
 
-diag(term_term_thr) = 0
+#diag(term_term_thr) = 0
 
-adj_matrix_thr <- as.data.frame(term_term_thr)
+#adj_matrix_thr <- as.data.frame(term_term_thr)
 
-adj_matrix_thr <- cbind(term = rownames(adj_matrix_thr), adj_matrix_thr)
+#adj_matrix_thr <- cbind(term = rownames(adj_matrix_thr), adj_matrix_thr)
 
 library(openxlsx)
 
-write.xlsx(adj_matrix_thr, file = "adjacency_matrix_thr.xlsx", rowNames = FALSE)
+#write.xlsx(adj_matrix_thr, file = "adjacency_matrix_thr.xlsx", rowNames = FALSE)
 ```
 
 
