@@ -73,7 +73,8 @@ custom_tokens <- c(
   "doesnt", "cant", "dont", "etc", "hey", "whatnot", "thisclassic", "joe", "couldn", "re",
   "isnt", "non", "issn", "aren", "arent", "ll", "isn", "s", "metrx", "yrs", "cvs", "alr",
   "chestgtbackgtlegs", "kgcompared", "btw", "tbsp", "irb", "amam", "alot", "didnt", "shouldn",
-  "somethingi", "chia", "hadn", "esn", "alllll", "idk"
+  "somethingi", "chia", "hadn", "esn", "alllll", "idk", "can", "however", "probably",
+  "without", "now", "would", "get", "wouldn"
 )
 
 corpus <- tm_map(corpus, removeWords, custom_tokens)
@@ -194,8 +195,8 @@ final_df_threads <- tdm_df_threads
 #final_df<-final_df[ , -20]
 ```
 
-#codice vecchio per matrice term-term
-```{r} 
+#codice vecchio per matrice term-term threads
+
 library(text2vec)
 
 corpus_char <- sapply(corpus, content)
@@ -221,7 +222,7 @@ term_term_thr <- create_tcm(tokens_thr,
                             skip_grams_window = 3,
                             skip_grams_window_context = "right")
 
-```
+
 
 
 COMMENTI
@@ -300,6 +301,35 @@ final_df_comments = tdm_df_comments
 final_df_comments<-final_df_comments[ , -1]
 ```
 
+costruzione comment comment con window size
+
+corpus2_char <- sapply(corpus2, content)
+
+# 1. Tokenizzazione del corpus
+tokens_com <- itoken(corpus2_char, tokenizer = word_tokenizer, progressbar = FALSE)
+
+# 2. Ottieni il vocabolario delle parole in final_df
+# Supponiamo che le colonne di final_df siano i termini
+vocab_terms_com <- colnames(final_df_comments)
+
+# 3. Crea il vocabolario solo con questi termini
+vocab_com <- create_vocabulary(tokens_com)
+vocab_com <- prune_vocabulary(vocab_thr, term_count_min = 20)
+vocab_com<- vocab_com[vocab_com$term %in% vocab_terms_com, ]
+
+# 4. Crea il vettorizzatore con il vocabolario filtrato
+vectorizer_com <- vocab_vectorizer(vocab_com)
+
+
+weight_com = c(1, 0.5, 0, 0)
+
+# 5. Crea la matrice di co-occorrenza (Term-Term Matrix)
+term_term_com <- create_tcm(tokens_com,
+                            vectorizer_com,
+                            skip_grams_window = 4,
+                            skip_grams_window_context = "right",
+                            weights = weight_com)
+
 
 DATAFRAMES PER FARE LE RETI ONE MODE PAROLE-PAROLE SU GEPHI
 
@@ -356,8 +386,6 @@ edges_df_comments
 
 write.csv(edges_df_comments, "edges_df_comments.csv", row.names = FALSE)
 ```
-
-
 
 
 
