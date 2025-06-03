@@ -17,36 +17,30 @@ library(pals)
 library(SnowballC)
 library(lda)
 library(flextable)
-
-df_new_comments = read.csv("nutrition_comments_cleaned.csv")
-df_new_threads = read.csv("nutrition_threads_cleaned.csv")
-
-combined_df <- data.frame(Cleaned_Text = c(df_new_threads$Cleaned_text, df_new_comments$Cleaned_Comment))
-
 ```
 
 Lettura del Corpus
 Term Document Matrix
 ```{r}
 # Trova tutte le colonne presenti in entrambi i dataframe
-all_cols <- union(names(final_df), names(final_df2))
+all_cols <- union(names(final_df_threads), names(final_df_comments))
 
 # Aggiungi le colonne mancanti in final_df, con valore 0
-for (col in setdiff(all_cols, names(final_df))) {
-  final_df[[col]] <- 0
+for (col in setdiff(all_cols, names(final_df_threads))) {
+  final_df_threads[[col]] <- 0
 }
 # Aggiungi le colonne mancanti in final_df2, con valore 0
-for (col in setdiff(all_cols, names(final_df2))) {
-  final_df2[[col]] <- 0
+for (col in setdiff(all_cols, names(final_df_comments))) {
+  final_df_comments[[col]] <- 0
 }
 # Riordina le colonne in entrambi i dataframe per avere lo stesso ordine
-final_df <- final_df[ , all_cols]
-final_df2 <- final_df2[ , all_cols]
+final_df <- final_df_threads[ , all_cols]
+final_df2 <- final_df_comments[ , all_cols]
 # Concatena con rbind
-final_df_combined <- rbind(final_df, final_df2)
+final_df_combined <- rbind(final_df_threads, final_df_comments)
 
-final_df
-final_df2
+final_df_threads
+final_df_comments
 final_df_combined
 
 DTM <- final_df_combined
@@ -56,55 +50,39 @@ rimozione documenti vuoti
 ```{r}
 sel_idx <- slam::row_sums(DTM) > 0
 DTM <- DTM[sel_idx, ]
+DTM <- as.matrix(DTM)
 ```
 
-tuning per trovare il numero ottimale di topics----DA MIGLIORARE  O RIMUOVERE
-```{r}
-library(topicmodels)
 
-seq_k <- 2:7
-log_liks <- numeric(length(seq_k))
-
-for (i in seq_along(seq_k)) {
-  lda_model <- LDA(DTM, k = seq_k[i], method = "Gibbs", control = list(seed = 77))
-  log_liks[i] <- logLik(lda_model)
-}
-
-plot(seq_k, log_liks, type = "b", xlab = "Numero di topics", ylab = "Log-likelihood")
-```
-
+LDA prediction
 ```{r}
 set.seed(9161)
 # compute the LDA model, inference via 1000 iterations of Gibbs sampling
-topicModel <- LDA(DTM, 5, method="Gibbs", control=list(iter = 500, verbose = 25))
+topicModel <- LDA(DTM, 3, method="Gibbs", control=list(iter = 500, verbose = 25))
 topicModel
 ```
 
-
-
-
 ```{r}
+tmResult <- posterior(topicModel)
+attributes(tmResult)
 
-# Preprocessing: tokenizzazione + rimozione stopwords
-tidy_titles <- df_new_threads %>%
-  mutate(doc_id = row_number()) %>%
-  unnest_tokens(word, title) %>%
-  anti_join(stop_words)
+# for every document we have a probability distribution of its contained topics
+theta <- tmResult$topics 
+dim(theta)
 
-# Creazione della Document-Term Matrix
-dtm <- tidy_titles %>%
-  count(doc_id, word) %>%
-  cast_dtm(doc_id, word, n)
+terms(topicModel, 20)
 
-# Applica LDA (scegli numero topic, es. 4)
-lda_model <- LDA(dtm, k = 4, control = list(seed = 123))
+tmResult$topics %>% head(20)
+```
 
-# Vedi parole chiave per ogni topic
-topics <- tidy(lda_model, matrix = "beta")  # beta = probabilità parola|topic
+parole chiave per topic
+beta ti dice, per ogni topic, quanto è probabile ciascuna parola del vocabolario
+```{r}
+topics <- tidy(topicModel, matrix = "beta")  # beta = probabilità parola|topic
 
 top_terms <- topics %>%
   group_by(topic) %>%
-  slice_max(beta, n = 10) %>%
+  slice_max(beta, n = 20) %>%
   ungroup() %>%
   arrange(topic, -beta)
 
@@ -119,19 +97,13 @@ top_terms %>%
   labs(title = "Top terms per topic", x = "", y = "Beta (importance)")
 
 ```
-Ecco i 4 topic rilevati:
+Ecco i 3 topic rilevati:
 
-Pratica clinica e gestione del peso
-(rds, clinical, experience, weight, loss)
+Rosso --> Alimentazione, salute e pazienti
 
-Nutrizione generale e consigli per i pazienti
-(nutrition, advice, pay, dietician, protein)
+Verde --> Parole molto colloquiali e soggettive. Opinioni personali, atteggiamenti o esperienze
 
-Carriera professionale nel campo della dietetica
-(dietitian, career, dietitians, job, dietetics)
-
-Libera professione e regolamentazione
-(practice, nutrition, private, cdr, rds)
+Blu --> Carriera professionale nel campo della dietetica
 
 
 
@@ -142,41 +114,4 @@ Libera professione e regolamentazione
 
 
 
-
-
-COMMENTI
-```{r}
-# Preprocessing: tokenizzazione + rimozione stopwords
-tidy_titles <- df_new_comments %>%
-  mutate(doc_id = row_number()) %>%
-  unnest_tokens(word, Cleaned_Comment) %>%
-  anti_join(stop_words)
-
-# Creazione della Document-Term Matrix
-dtm <- tidy_titles %>%
-  count(doc_id, word) %>%
-  cast_dtm(doc_id, word, n)
-
-# Applica LDA (scegli numero topic, es. 4)
-lda_model <- LDA(dtm, k = 4, control = list(seed = 123))
-
-# Vedi parole chiave per ogni topic
-topics <- tidy(lda_model, matrix = "beta")  # beta = probabilità parola|topic
-
-top_terms <- topics %>%
-  group_by(topic) %>%
-  slice_max(beta, n = 10) %>%
-  ungroup() %>%
-  arrange(topic, -beta)
-
-# Visualizzazione semplice
-top_terms %>%
-  mutate(term = reorder_within(term, beta, topic)) %>%
-  ggplot(aes(term, beta, fill = factor(topic))) +
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~ topic, scales = "free") +
-  scale_x_reordered() +
-  coord_flip() +
-  labs(title = "Top terms per topic", x = "", y = "Beta (importance)")
-```
 

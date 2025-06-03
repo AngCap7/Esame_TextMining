@@ -205,7 +205,7 @@ tokens_thr <- itoken(corpus_char, tokenizer = word_tokenizer, progressbar = FALS
 
 # 2. Ottieni il vocabolario delle parole in final_df
 # Supponiamo che le colonne di final_df siano i termini
-vocab_terms_thr <- colnames(final_df)
+vocab_terms_thr <- colnames(final_df_threads)
 
 # 3. Crea il vocabolario solo con questi termini
 vocab_thr <- create_vocabulary(tokens_thr)
@@ -360,5 +360,14 @@ write.csv(edges_df_comments, "edges_df_comments.csv", row.names = FALSE)
 
 
 
+
+
+DATAFRAMES UNITI
+```{r}
+
+df_new_comments = read.csv("nutrition_comments_cleaned.csv")
+df_new_threads = read.csv("nutrition_threads_cleaned.csv")
+
+combined_df <- data.frame(Cleaned_Text = c(df_new_threads$Cleaned_text, df_new_comments$Cleaned_Comment))
 ```
 
