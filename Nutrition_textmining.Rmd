@@ -74,7 +74,7 @@ custom_tokens <- c(
   "isnt", "non", "issn", "aren", "arent", "ll", "isn", "s", "metrx", "yrs", "cvs", "alr",
   "chestgtbackgtlegs", "kgcompared", "btw", "tbsp", "irb", "amam", "alot", "didnt", "shouldn",
   "somethingi", "chia", "hadn", "esn", "alllll", "idk", "can", "however", "probably",
-  "without", "now", "would", "get", "wouldn"
+  "without", "now", "would", "get", "wouldn", "get", "just", "also", "even", "lot"
 )
 
 corpus <- tm_map(corpus, removeWords, custom_tokens)
@@ -282,7 +282,7 @@ quantile(frequency_tbl2$V1, probs = 0.98)
 quantile(frequency_tbl2$V1, probs = 0.99)
 quantile(frequency_tbl2$V1, probs = 1)
 
-word_freq_under3_2 <- names(column_frequencies2)[column_frequencies2 < 10] # tolgo tutte le parole sotto la frequenza 3
+word_freq_under3_2 <- names(column_frequencies2)[column_frequencies2 < 80] # tolgo tutte le parole sotto la frequenza 3
 rare_words_list2 <- as.list(word_freq_under3_2 )
 
 tdm_df_comments <- tdm_df_comments[, !colnames(tdm_df_comments) %in% rare_words_list2]
@@ -300,6 +300,9 @@ final_df_comments = tdm_df_comments
 #final_df2 <- subset(tdm_df_comments, select = -c(didn, don, didn, doesn, can, don,etc, hey))
 final_df_comments<-final_df_comments[ , -1]
 ```
+
+
+
 
 costruzione comment comment con window size
 
@@ -386,7 +389,20 @@ edges_df_comments
 
 write.csv(edges_df_comments, "edges_df_comments.csv", row.names = FALSE)
 ```
+estensione di parole parole nei comment per ridurre archi
+```{r}
+term_term_comm = t(as.matrix(final_df_comments)) %*% as.matrix(final_df_comments)
 
+diag(term_term_comm) = 0
+
+threshold_com = 50
+
+term_term_comm[term_term_comm <= threshold_com] <- 0
+
+tt_com_df <- as.data.frame(term_term_comm)
+
+write.csv(tt_com_df, file = "term_term_comm.csv", row.names = TRUE)
+```
 
 
 
