@@ -139,10 +139,10 @@ plot(g, layout = layout_with_fr,
      vertex.label.cex = 0.7,
      edge.width = E(g)$weight / max(E(g)$weight) * 5)
 ```
+
+
 OverLapping community detection
 ```{r}
-library(linkcomm)
-
 terms_thr <- colnames(term_term_thr)
 
 # 2. Estrai gli indici non nulli dalla matrice sparsa
@@ -157,10 +157,14 @@ edges_thr <- subset(edges_thr, Source != Target)
 
 # 4. Rimuovi archi con peso basso (es. < 3) per ridurre rumore
 edges_thr <- subset(edges_thr, Weight >= 2)
+write.xlsx(edges_thr, file = "term_term.xlsx", rowNames = FALSE)
+```
 
+
+```{r}
+library(linkcomm)
 
 lc_thr <- getLinkCommunities(edges_thr, hcmethod = "average", directed = FALSE)
-
 
 # Disegna le comunità
 plot(
@@ -177,29 +181,66 @@ plot(
 
 ```
 
-```{r}
-write.xlsx(edges_thr, file = "term_term.xlsx", rowNames = FALSE)
-```
+
+
+library(openxlsx)
+
+terms_com <- colnames(term_term_com)
+
+# 2. Estrai gli indici non nulli dalla matrice sparsa
+edges_com <- data.frame(
+  Source = terms_com[term_term_com@i + 1],    # row indices (0-based → +1)
+  Target = terms_com[term_term_com@j + 1],    # column indices
+  Weight = term_term_com@x               # values (co-occurrence)
+)
+
+# 3. Rimuovi self-loop (opzionale ma consigliato)
+edges_com <- subset(edges_com, Source != Target)
+
+# 4. Rimuovi archi con peso basso (es. < 3) per ridurre rumore
+edges_com <- subset(edges_com)
+write.xlsx(edges_com, file = "term_term_comm.xlsx", rowNames = FALSE)
 
 
 Rete parole-parole per i threads
 DA FARE CON DIVERSE WINDOW SIZE
-```{r}
-#frequenze_tdm <- colSums(tdm_df)  # tdm_df è la tua DTM che sta in Nutrition_textmining
 
-#tdm_filt <- tdm_df[, frequenze_tdm > 15]
-#term_term_thr = t(as.matrix(tdm_filt)) %*% as.matrix(tdm_filt)
+frequenze_tdm <- colSums(tdm_df_threads)  # tdm_df è la tua DTM che sta in Nutrition_textmining
 
-#diag(term_term_thr) = 0
+tdm_filt <- tdm_df_threads[, frequenze_tdm > 15]
+term_term_thr = t(as.matrix(tdm_filt)) %*% as.matrix(tdm_filt)
 
-#adj_matrix_thr <- as.data.frame(term_term_thr)
+diag(term_term_thr) = 0
 
-#adj_matrix_thr <- cbind(term = rownames(adj_matrix_thr), adj_matrix_thr)
+adj_matrix_thr <- as.data.frame(term_term_thr)
+
+adj_matrix_thr <- cbind(term = rownames(adj_matrix_thr), adj_matrix_thr)
 
 library(openxlsx)
 
-#write.xlsx(adj_matrix_thr, file = "adjacency_matrix_thr.xlsx", rowNames = FALSE)
-```
+write.xlsx(adj_matrix_thr, file = "adjacency_matrix_thr.xlsx", rowNames = T)
+
+
+
+frequenze_tdm_com <- colSums(tdm_df_comments)  # tdm_df è la tua DTM che sta in 
+
+tdm_filt_com <- tdm_df_comments[, frequenze_tdm_com > 50]
+term_term_com = t(as.matrix(tdm_filt_com)) %*% as.matrix(tdm_filt_com)
+
+diag(term_term_com) = 0
+
+adj_matrix_com <- as.data.frame(term_term_com)
+
+adj_matrix_com <- cbind(term = rownames(adj_matrix_com), adj_matrix_com)
+
+adj_matrix_com = adj_matrix_com[,-1]
+
+library(openxlsx)
+
+write.xlsx(adj_matrix_com, file = "adjacency_matrix_com.xlsx", rowNames = T)
+
+
+
 
 
 
@@ -246,8 +287,6 @@ ggraph(graph_tbl, layout = "fr") +
   scale_edge_width(range = c(0.5, 2))
 
 ```
-
-
 
 
 
