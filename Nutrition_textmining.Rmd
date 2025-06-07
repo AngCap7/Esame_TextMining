@@ -405,6 +405,21 @@ write.csv(tt_com_df, file = "term_term_comm.csv", row.names = TRUE)
 ```
 
 
+```{r}
+term_term_thr = t(as.matrix(final_df_threads)) %*% as.matrix(final_df_threads)
+
+diag(term_term_thr) = 0
+
+threshold_thr = 30
+
+term_term_thr[term_term_thr <= threshold_thr] <- 0
+
+tt_thr_df <- as.data.frame(term_term_thr)
+
+write.csv(tt_thr_df, file = "term_term_thr.csv", row.names = TRUE)
+```
+
+
 
 DATAFRAMES UNITI
 ```{r}
