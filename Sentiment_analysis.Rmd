@@ -24,6 +24,11 @@ library(yardstick)
 library(text2vec)
 library(cluster)
 library(factoextra)
+library(igraph)
+library(ggraph)
+library(tidygraph)
+library(tidyverse)
+library(wordcloud)
 
 
 #install.packages(c("tm", "BMS", "quadprog", "rJava", "parallel", "data.table", "entropy"))
@@ -33,15 +38,18 @@ library(factoextra)
 ```
 
 
-```{r cars}
-data1<-read_csv("nutrition_comments_cleaned.csv")
+```{r cars, include=FALSE}
+data1<-read_csv("/Users/melaniauccello/Desktop/Network science e text mining/Esame_TextMining/nutrition_comments_cleaned.csv")
 View(data1)
 
-data2<-read_csv("nutrition_threads_cleaned.csv")
+data2<-read_csv("/Users/melaniauccello/Desktop/Network science e text mining/Esame_TextMining/nutrition_threads_cleaned.csv")
 View(data2)
 ```
 ### Analisi dei set di dati come unico documento per capire il sentimento predominante
-```{r}
+```{r, echo=FALSE}
+data1$Cleaned_Comment <- gsub("[^[:alnum:] ]", "", data1$Cleaned_Comment)
+data2$Cleaned_Text <- gsub("[^[:alnum:] ]", "", data2$Cleaned_Text)
+
 # Unisci tutti i testi della colonna 'Cleaned_Comment' in un singolo testo (per data1)
 text1 <- paste(data1$Cleaned_Comment, collapse = " ")
 
@@ -62,17 +70,18 @@ print(colSums(sentiment1))
 print(colSums(sentiment2))
 
 ```
+
+
 ```{r}
 sentiment_pred1<-which.max(colSums(sentiment1))  # Sentimento dominante data1
 sentiment_pred2<-which.max(colSums(sentiment2))# Sentimento dominante data2
 
 print(sentiment_pred1)
-print(sentiment_pred1)
+print(sentiment_pred2)
 ```
 
 
 ```{r}
-nrc <- get_sentiments("nrc")
 # Prepara comments
 comments <- data1 %>%
   select(text = Cleaned_Comment) %>%
@@ -188,6 +197,31 @@ contrasting_comments2 <- filter(data2_sentiment, contrast == TRUE)
 head(contrasting_comments1$Cleaned_Comment, 10)
 head(contrasting_comments2$Cleaned_Text, 10)
 ```
+WORDCLOUD DELLE PAROLE MAGGIORMENTE EMOTIVE
+```{r}
+wordcloud(
+  words = data1_sentiment$Cleaned_Comment,
+  min.freq = 150,
+  random.order = FALSE,
+  colors = brewer.pal(8, "Dark2"),  # Puoi cambiare la palette (es: "Set1", "Pastel1")
+  scale = c(4, 0.5),                # Dimensione massima e minima delle parole
+  rot.per = 0.25                    # Percentuale di parole ruotate (verticali)
+)
+```
+
+```{r}
+wordcloud(
+  words = data2_sentiment$Cleaned_Text,
+  min.freq = 500,
+  random.order = FALSE,
+  colors = brewer.pal(8, "Dark2"),  # Puoi cambiare la palette (es: "Set1", "Pastel1")
+  scale = c(4, 0.5),                # Dimensione massima e minima delle parole
+  rot.per = 0.25                    # Percentuale di parole ruotate (verticali)
+)
+#wordcloud(words = data2_sentiment$Cleaned_Text, min.freq = 500)
+```
+
+
 
 ### ABSA
 
@@ -266,7 +300,8 @@ aspect_pattern <- str_c("(", str_c(aspect_terms_ordered, collapse = "|"), ")")
 
 # Filtra solo le frasi che contengono almeno un aspetto
 data1_aspects <- data1_sentences %>%
-  filter(str_detect(sentence, regex(aspect_pattern, ignore_case = TRUE)))
+  filter(str_detect(sentence, regex(aspect_pattern, ignore_case = TRUE))) %>%
+  mutate(matched_aspect = str_extract(sentence, regex(aspect_pattern, ignore_case = TRUE)))
 
 # Calcola il sentiment della frase
 data1_aspects <- data1_aspects %>%
@@ -278,7 +313,10 @@ data1_aspects <- data1_aspects %>%
          ))
 
 View(data1_aspects)
+```
 
+
+```{r}
 # Ripeti lo stesso per data2_aspects:
 data2_sentences <- data2 %>%
   mutate(sentences = tokenize_sentences(Cleaned_Text)) %>%
@@ -297,8 +335,6 @@ data2_aspects <- data2_aspects %>%
          ))
 ```
 
-
-
 ```{r}
 data2_aspects %>%
   count(polarity, sort = TRUE)
@@ -308,6 +344,56 @@ data2_aspects %>%
   summarise(avg_sentiment = mean(sentiment_score))
 
 ```
+
+```{r}
+# Filtra solo le frasi che contengono almeno un aspetto
+data2_aspects <- data2_sentences %>%
+  filter(str_detect(sentence, regex(aspect_pattern, ignore_case = TRUE))) %>%
+  mutate(matched_aspect = str_extract(sentence, regex(aspect_pattern, ignore_case = TRUE)))
+
+# Calcola il sentiment della frase
+data2_aspects <- data2_aspects %>%
+  mutate(sentiment_score = get_sentiment(sentence, method = "syuzhet"),
+         polarity = case_when(
+           sentiment_score > 0 ~ "positive",
+           sentiment_score < 0 ~ "negative",
+           TRUE ~ "neutral"
+         ))
+
+#View(data2_aspects)
+```
+
+```{r}
+# Aggiungiamo etichette
+data1_aspects <- data1_aspects %>% mutate(source = "comments")
+data2_aspects <- data2_aspects %>% mutate(source = "threads")
+
+# Unione
+all_aspects <- bind_rows(data1_aspects, data2_aspects)
+
+# Riepilogo con media dei sentimenti
+aspect_summary <- all_aspects %>%
+  group_by(matched_aspect, polarity) %>%
+  summarise(mean_sentiment = mean(sentiment_score), .groups = "drop") %>%
+  arrange(desc(abs(mean_sentiment)))
+
+
+# Visualizzazione con colori pastello
+ggplot(aspect_summary, aes(x = reorder(matched_aspect, mean_sentiment), y = mean_sentiment, fill = polarity)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Sentiment medio per aspetto", x = "Aspetto", y = "Score medio") +
+  scale_fill_manual(values = c(
+    "positive" = "#AEDFF7",  # Azzurro pastello
+    "negative" = "#D7BDE2",  # Viola chiaro pastello
+    "neutral"  = "#FADBD8"   # Rosa salmone pastello
+  )) +
+  theme_minimal()
+
+
+```
+
+
 Differenze di polarità tra commenti e threads
 
 ```{r}
@@ -329,7 +415,7 @@ ggplot(all_aspects, aes(x = polarity, fill = source)) +
   theme_minimal()
 
 ```
-## Comparative sentiment analysis
+### Comparative sentiment analysis
 
 Ricostruiamo la gerarchia commenti tramite comment_id
 Calcoliamo la polarità (positivo/negativo) per ogni commento
@@ -337,25 +423,24 @@ Mettiamo in relazione i commenti con i loro “padri” (commenti cui rispondono
 Valutiamo se sono in accordo o disaccordo emotivo
 
 ```{r}
-# Funzione per ottenere il comment_id padre
+# 1. Aggiungi colonna con ID del commento padre (gerarchia)
 get_parent_id <- function(cid) {
   if (!str_detect(cid, "_")) {
-    return(NA) # commento root, no padre
+    return(NA_character_) # commento root
   } else {
-    parts <- str_split(cid, "_")[[1]]
-    parent_id <- paste(parts[-length(parts)], collapse = "_")
-    return(parent_id)
+    return(str_remove(cid, "_[^_]+$"))  # rimuove l'ultima parte (più efficiente di str_split)
   }
 }
 
 data1 <- data1 %>%
   mutate(parent_comment_id = sapply(comment_id, get_parent_id))
+
 ```
 
 ```{r}
+# 2. Calcolo polarità dei commenti (basato su parole NRC positive/negative)
 nrc <- get_sentiments("nrc")
 
-# Sentiment positivo/negativo (esempio polarità)
 sentiment_comments <- data1 %>%
   select(comment_id, Cleaned_Comment) %>%
   unnest_tokens(word, Cleaned_Comment) %>%
@@ -366,41 +451,114 @@ sentiment_comments <- data1 %>%
 
 ```
 
+
 ```{r}
-# Unisci polarità commento e padre
+# 3. Abbina commenti figli con i genitori e calcola le polarità
 paired_sentiments <- data1 %>%
   select(comment_id, parent_comment_id) %>%
   inner_join(sentiment_comments %>% select(comment_id, polarity), by = "comment_id") %>%
-  left_join(sentiment_comments %>% select(comment_id, polarity), by = c("parent_comment_id" = "comment_id"), suffix = c("_child", "_parent")) %>%
-  filter(!is.na(polarity_parent))  # escludi root senza padre
+  left_join(sentiment_comments %>% select(comment_id, polarity), 
+            by = c("parent_comment_id" = "comment_id"), 
+            suffix = c("_child", "_parent")) %>%
+  filter(!is.na(polarity_parent))  # esclude i root (che non hanno genitore)
 
 ```
 
-
 ```{r}
+# 4. Classifica il tipo di accordo/disaccordo emotivo
 paired_sentiments <- paired_sentiments %>%
   mutate(agreement = case_when(
-    polarity_child * polarity_parent > 0 ~ "accordo",    # stesse polarità (positivo/positivo o negativo/negativo)
-    polarity_child * polarity_parent < 0 ~ "disaccordo", # polarità opposte
-    TRUE ~ "neutro"                                      # zero o indeterminato
+    polarity_child * polarity_parent > 0 ~ "accordo",
+    polarity_child * polarity_parent < 0 ~ "disaccordo",
+    TRUE ~ "neutro"
   ))
 
+# Tabella riepilogativa
 table(paired_sentiments$agreement)
 
 ```
 
 ```{r}
+# 5. Visualizzazione
 paired_sentiments %>%
   count(agreement) %>%
-  mutate(percent = n / sum(n) * 100) %>%
+  mutate(percent = round(n / sum(n) * 100, 1)) %>%
   ggplot(aes(x = agreement, y = percent, fill = agreement)) +
   geom_bar(stat = "identity") +
-  labs(title = "Accordo/Disaccordo nei commenti figlio-padre",
-       x = "Tipo di relazione sentimentale",
-       y = "Percentuale (%)") +
-  theme_minimal()
+  labs(
+    title = "Accordo/Disaccordo nei commenti figlio-padre",
+    x = "Tipo di relazione sentimentale",
+    y = "Percentuale (%)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c(
+    "accordo" = "#66c2a5", 
+    "disaccordo" = "#AEDFF7", 
+    "neutro" = "#8da0cb"
+  ))
 
 ```
+
+heatmap variazione emotiva
+```{r}
+# 1. Costruisci i nodi con polarità già calcolata
+nodes <- sentiment_comments %>%
+  mutate(polarity_class = case_when(
+    polarity > 0 ~ "positive",
+    polarity < 0 ~ "negative",
+    TRUE ~ "neutral"
+  ))
+
+# 2. Costruisci gli archi (padre → figlio)
+edges <- data1 %>%
+  select(from = parent_comment_id, to = comment_id) %>%
+  filter(!is.na(from))  # escludi root
+
+# 3. Tieni solo gli archi validi (sia padre che figlio esistono nei nodi)
+edges_clean <- edges %>%
+  filter(from %in% nodes$comment_id & to %in% nodes$comment_id)
+
+# 4. Aggiungi polarità padre e figlio per visualizzazione
+edges_clean <- edges_clean %>%
+  left_join(nodes %>% select(comment_id, polarity_class), by = c("from" = "comment_id")) %>%
+  rename(parent_polarity = polarity_class) %>%
+  left_join(nodes %>% select(comment_id, polarity_class), by = c("to" = "comment_id")) %>%
+  rename(child_polarity = polarity_class) %>%
+  mutate(variation = case_when(
+    parent_polarity == child_polarity & !is.na(parent_polarity) ~ "accordo",
+    parent_polarity != child_polarity & !is.na(parent_polarity) & !is.na(child_polarity) ~ "disaccordo",
+    TRUE ~ "neutro"
+  ))
+
+# 5. Costruisci il grafo
+graph <- tbl_graph(nodes = nodes, edges = edges_clean, directed = TRUE)
+
+# 6. Visualizzazione
+ggraph(graph, layout = "tree") +
+  geom_edge_link(aes(color = variation),
+                 arrow = arrow(length = unit(2, 'mm')),
+                 end_cap = circle(3, 'mm'),
+                 alpha = 0.6) +
+  geom_node_point(aes(color = polarity_class), size = 3) +
+  scale_edge_color_manual(values = c(
+    "accordo" = "#66c2a5",     # verde
+    "disaccordo" = "#fc8d62",  # rosso
+    "neutro" = "gray60"
+  )) +
+  scale_color_manual(values = c(
+    "positive" = "#1b9e77",
+    "negative" = "#d95f02",
+    "neutral" = "#7570b3"
+  )) +
+  theme_void() +
+  labs(
+    title = "Variazione Emotiva nelle Risposte Figlio-Padre",
+    color = "Polarità nodo",
+    edge_color = "Variazione emotiva"
+  )
+
+```
+
 ### Sentiment Lexicon Acquisition
 
 Il lexicon è il prodotto finale: un dizionario con parole e punteggi sentimentali.
@@ -481,9 +639,86 @@ top_negative <- word_log_odds %>% filter(sentiment_label == "negative") %>% arra
 print(top_positive)
 print(top_negative)
 ```
+```{r}
+# 8. Seleziona le top 10 parole per ciascuna classe
+top_positive <- word_log_odds %>%
+  filter(sentiment_label == "positive") %>%
+  top_n(10, log_odds) %>%
+  arrange(log_odds)
 
-### PREVISIONE SUPERVISIONATA
+top_negative <- word_log_odds %>%
+  filter(sentiment_label == "negative") %>%
+  top_n(10, -log_odds) %>%
+  arrange(log_odds)
+
+# 9. Funzione per generare il grafico a barre con colori pastello
+plot_top_words <- function(df, title) {
+  df <- df %>%
+    mutate(word = fct_reorder(word, log_odds))
+  ggplot(df, aes(x = word, y = log_odds, fill = sentiment_label)) +
+    geom_col(show.legend = FALSE) +
+    coord_flip() +
+    scale_fill_manual(values = c(
+      positive = "#AEDFF7",  # pastello arancione
+      negative = "#B2E8B2",  # pastello verde
+      neutral = "#CCCCCC"    # grigio per neutri, se presenti
+    )) +
+    labs(title = title,
+         x = "Parola",
+         y = "Log Odds Ratio") +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold"),
+      axis.text = element_text(size = 12),
+      axis.title = element_text(size = 12)
+    )
+}
+
+# 10. Genera i grafici
+gg_positive <- plot_top_words(top_positive, "Top 10 Parole Positive (log-odds)")
+gg_negative <- plot_top_words(top_negative, "Top 10 Parole Negative (log-odds)")
+
+# 11. Mostra i grafici
+print(gg_positive)
+print(gg_negative)
+
+```
 
 
-### PREVISIONE NON SUPERVISIONATA
+RETE DEI COMMENTI CON SENTIMENT
+```{r}
+# 1. Prepara i nodi con polarità
+nodes <- sentiment_comments %>%
+  mutate(polarity_class = case_when(
+    polarity > 0 ~ "positive",
+    polarity < 0 ~ "negative",
+    TRUE ~ "neutral"
+  )) %>%
+  rename(name = comment_id)  # fondamentale per tbl_graph
+
+# 2. Prepara gli archi (da padre a figlio)
+edges <- data1 %>%
+  select(from = parent_comment_id, to = comment_id) %>%
+  filter(!is.na(from)) %>%
+  filter(from %in% nodes$name & to %in% nodes$name)
+
+# 3. Crea il grafo
+graph <- tbl_graph(nodes = nodes, edges = edges, directed = TRUE)
+
+# 4. Visualizzazione con ggraph
+ggraph(graph, layout = "tree") +
+  geom_edge_link(alpha = 0.3, arrow = arrow(length = unit(2, 'mm')), end_cap = circle(3, 'mm')) +
+  geom_node_point(aes(color = polarity_class), size = 3) +
+  scale_color_manual(values = c(
+    "positive" = "#66c2a5",
+    "negative" = "#fc8d62",
+    "neutral" = "#8da0cb"
+  )) +
+  theme_void() +
+  labs(title = "Rete dei Commenti con Polarità del Sentimento")
+```
+
+
+
+
 
