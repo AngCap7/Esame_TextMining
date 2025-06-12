@@ -50,11 +50,6 @@ write.csv(df_nutrition_comments, "nutrition_comments.csv", row.names = FALSE)
 ```
 
 
-
-
-
-
-
 ```{r}
 find_subreddits("oncology nutrition")
 ```

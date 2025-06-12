@@ -171,7 +171,7 @@ library(wordcloud)
 library(wordcloud2)
 library(RColorBrewer)
 
-matrix <- as.matrix(tdm_df) 
+matrix <- as.matrix(tdm_df_threads) 
 matrix <- t(matrix)
 words <- sort(rowSums(matrix),decreasing=TRUE) 
 dfw <- data.frame(word = names(words),freq=words)
@@ -204,7 +204,7 @@ ggplot(df_plot2, aes(x = reorder(term, +freq), y = freq, fill = freq)) + geom_ba
 Words cloud-comments
 ```{r}
 suppressWarnings({
-matrix2 <- as.matrix(tdm_df2) 
+matrix2 <- as.matrix(tdm_df_comments) 
 matrix2 <- t(matrix2)
 words2 <- sort(rowSums(matrix2),decreasing=TRUE) 
 dfw2 <- data.frame(word2 = names(words2),freq2 =words2)
