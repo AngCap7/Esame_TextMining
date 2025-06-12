@@ -121,7 +121,7 @@ threads_mod_0 <- Threads %>%
 comments_mod_0 <- Comments %>%
   filter(modularity_class == 0)
 
-topic1_filtered <- topics %>%
+topic1_filtered <- top_terms %>%
   filter(topic == 1)
 
 common_ids_thr0 <- threads_mod_0$Id[threads_mod_0$Id %in% topic1_filtered$term]
@@ -137,7 +137,7 @@ topic_1_comm = Comments %>%
   filter(Id %in% common_ids_comm0) %>%
   select(Id, pageranks)
 
-ggplot(topic_1_thr[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+ggplot(topic_1_thr[1:7,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   labs(
     title = "Topic 1 (Threads)",
@@ -147,7 +147,7 @@ ggplot(topic_1_thr[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pager
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggplot(topic_1_comm[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+ggplot(topic_1_comm[1:8,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
   geom_bar(stat = "identity", fill = "red") +
   labs(
     title = "Topic 1 (Comments)",
@@ -168,7 +168,7 @@ threads_mod_1 <- Threads %>%
 comments_mod_1 <- Comments %>%
   filter(modularity_class == 1)
 
-topic2_filtered <- topics %>%
+topic2_filtered <- top_terms %>%
   filter(topic == 2)
 
 common_ids_thr1 <- threads_mod_1$Id[threads_mod_1$Id %in% topic2_filtered$term]
@@ -183,7 +183,7 @@ topic_2_comm = Comments %>%
   filter(Id %in% common_ids_comm1) %>%
   select(Id, pageranks)
 
-ggplot(topic_2_thr[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+ggplot(topic_2_thr[1:8,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   labs(
     title = "Topic 2 (Threads)",
@@ -196,7 +196,7 @@ ggplot(topic_2_thr[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pager
 ggplot(topic_2_comm[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
   geom_bar(stat = "identity", fill = "red") +
   labs(
-    title = "Topic 2 (Commments",
+    title = "Topic 2 (Comments)",
     x = "Term",
     y = "Pagerank"
   ) +
@@ -213,7 +213,7 @@ threads_mod_2 <- Threads %>%
 comments_mod_2 <- Comments %>%
   filter(modularity_class == 2)
 
-topic3_filtered <- topics %>%
+topic3_filtered <- top_terms %>%
   filter(topic == 3)
 
 
@@ -242,7 +242,7 @@ ggplot(topic_3_thr[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pager
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-ggplot(topic_3_comm[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+ggplot(topic_3_comm[1:5,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
   geom_bar(stat = "identity", fill = "red") +
   labs(
     title = "Topic 3 (Comments)",
