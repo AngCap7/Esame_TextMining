@@ -176,7 +176,7 @@ quantile(frequency_tbl$V1, probs = 0.98)
 quantile(frequency_tbl$V1, probs = 0.99)
 quantile(frequency_tbl$V1, probs = 1)
 
-word_freq_under6 <- names(column_frequencies)[column_frequencies < 30] # tolgo tutte le parole sotto la frequenza 3
+word_freq_under6 <- names(column_frequencies)[column_frequencies < 3] # tolgo tutte le parole sotto la frequenza 3
 rare_words_list <- as.list(word_freq_under6 )
 
 tdm_df_threads <- tdm_df_threads[, !colnames(tdm_df_threads) %in% rare_words_list]
@@ -282,7 +282,7 @@ quantile(frequency_tbl2$V1, probs = 0.98)
 quantile(frequency_tbl2$V1, probs = 0.99)
 quantile(frequency_tbl2$V1, probs = 1)
 
-word_freq_under3_2 <- names(column_frequencies2)[column_frequencies2 < 80] # tolgo tutte le parole sotto la frequenza 3
+word_freq_under3_2 <- names(column_frequencies2)[column_frequencies2 < 4] # tolgo tutte le parole sotto la frequenza 3
 rare_words_list2 <- as.list(word_freq_under3_2 )
 
 tdm_df_comments <- tdm_df_comments[, !colnames(tdm_df_comments) %in% rare_words_list2]
