@@ -114,13 +114,14 @@ Comments <- read_csv("Comments.csv")
 
 Cerco i termini comuni tra la prima community e il primo topic
 ```{r}
+library(tidyverse)
 threads_mod_0 <- Threads %>%
   filter(modularity_class == 0)
 
 comments_mod_0 <- Comments %>%
   filter(modularity_class == 0)
 
-topic1_filtered <- topics %>%
+topic1_filtered <- top_terms %>%
   filter(topic == 1)
 
 common_ids_thr0 <- threads_mod_0$Id[threads_mod_0$Id %in% topic1_filtered$term]
@@ -136,17 +137,26 @@ topic_1_comm = Comments %>%
   filter(Id %in% common_ids_comm0) %>%
   select(Id, pageranks)
 
-topic_1 = union(topic_1_thr, topic_1_comm)
-
-ggplot(topic_1[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+ggplot(topic_1_thr[1:7,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   labs(
-    title = "Topic 1",
+    title = "Topic 1 (Threads)",
     x = "Term",
     y = "Pagerank"
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(topic_1_comm[1:8,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+  geom_bar(stat = "identity", fill = "red") +
+  labs(
+    title = "Topic 1 (Comments)",
+    x = "Term",
+    y = "Pagerank"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 ```
 
 
@@ -158,7 +168,7 @@ threads_mod_1 <- Threads %>%
 comments_mod_1 <- Comments %>%
   filter(modularity_class == 1)
 
-topic2_filtered <- topics %>%
+topic2_filtered <- top_terms %>%
   filter(topic == 2)
 
 common_ids_thr1 <- threads_mod_1$Id[threads_mod_1$Id %in% topic2_filtered$term]
@@ -173,12 +183,20 @@ topic_2_comm = Comments %>%
   filter(Id %in% common_ids_comm1) %>%
   select(Id, pageranks)
 
-topic_2 = union(topic_2_thr, topic_2_comm)
-
-ggplot(topic_2[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
-  geom_bar(stat = "identity", fill = "orange") +
+ggplot(topic_2_thr[1:8,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
   labs(
-    title = "Topic 2",
+    title = "Topic 2 (Threads)",
+    x = "Term",
+    y = "Pagerank"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(topic_2_comm[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+  geom_bar(stat = "identity", fill = "red") +
+  labs(
+    title = "Topic 2 (Comments)",
     x = "Term",
     y = "Pagerank"
   ) +
@@ -195,8 +213,9 @@ threads_mod_2 <- Threads %>%
 comments_mod_2 <- Comments %>%
   filter(modularity_class == 2)
 
-topic3_filtered <- topics %>%
+topic3_filtered <- top_terms %>%
   filter(topic == 3)
+
 
 common_ids_thr2 <- threads_mod_2$Id[threads_mod_2$Id %in% topic3_filtered$term]
 
@@ -210,17 +229,29 @@ topic_3_comm = Comments %>%
   filter(Id %in% common_ids_comm2) %>%
   select(Id, pageranks)
 
-topic_3 = union(topic_3_thr, topic_3_comm)
 
-ggplot(topic_3[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
-  geom_bar(stat = "identity", fill = "cyan") +
+
+ggplot(topic_3_thr[1:10,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
   labs(
-    title = "Topic 3",
+    title = "Topic 3 (Threads)",
+    x = "Term",
+    y = "Pagerank"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+ggplot(topic_3_comm[1:5,], aes(x = reorder(as.factor(Id), -pageranks), y = pageranks)) +
+  geom_bar(stat = "identity", fill = "red") +
+  labs(
+    title = "Topic 3 (Comments)",
     x = "Term",
     y = "Pagerank"
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
 
 
