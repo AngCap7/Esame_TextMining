@@ -29,7 +29,7 @@ library(ggraph)
 library(tidygraph)
 library(tidyverse)
 library(wordcloud)
-
+library(textdata)
 
 #install.packages(c("tm", "BMS", "quadprog", "rJava", "parallel", "data.table", "entropy"))
 #library(rJava)
@@ -39,10 +39,10 @@ library(wordcloud)
 
 
 ```{r cars, include=FALSE}
-data1<-read_csv("/Users/melaniauccello/Desktop/Network science e text mining/Esame_TextMining/nutrition_comments_cleaned.csv")
+data1<-read_csv("nutrition_comments_cleaned.csv")
 View(data1)
 
-data2<-read_csv("/Users/melaniauccello/Desktop/Network science e text mining/Esame_TextMining/nutrition_threads_cleaned.csv")
+data2<-read_csv("nutrition_threads_cleaned.csv")
 View(data2)
 ```
 ### Analisi dei set di dati come unico documento per capire il sentimento predominante

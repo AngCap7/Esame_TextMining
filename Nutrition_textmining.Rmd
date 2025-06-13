@@ -150,7 +150,7 @@ suppressWarnings({
 ```
 ```{r}
 tdm_df_threads <- as.data.frame(as.matrix(tdm_1))
-#tdm_df
+tdm_df_threads
 ```
 
 rimozione parole rare
@@ -256,7 +256,7 @@ suppressWarnings({
 
 ```{r}
 tdm_df_comments <- as.data.frame(as.matrix(tdm_2))
-#tdm_df
+tdm_df
 ```
 
 rimozione parole rare
@@ -429,4 +429,6 @@ df_new_threads = read.csv("nutrition_threads_cleaned.csv")
 
 combined_df <- data.frame(Cleaned_Text = c(df_new_threads$Cleaned_text, df_new_comments$Cleaned_Comment))
 ```
+
+
 
